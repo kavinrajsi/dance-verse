@@ -1,0 +1,68 @@
+$yellow: #f2e600;
+$purple: #7b1fa2;
+$card-bg: rgba(0, 0, 0, 0.6);
+
+.prizeSection {
+  background: #200018; // dark base
+  padding: 3rem 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  justify-items: center;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid $yellow;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #fff;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.image {
+  object-fit: cover;
+  filter: brightness(0.5);
+}
+
+.title {
+  position: relative;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: $yellow;
+  margin-bottom: 1rem;
+  z-index: 1;
+}
+
+.details {
+  position: relative;
+  background: $card-bg;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.5;
+  z-index: 1;
+
+  p {
+    margin: 0.25rem 0;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+}

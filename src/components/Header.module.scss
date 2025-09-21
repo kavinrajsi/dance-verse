@@ -1,0 +1,145 @@
+$yellow: #f4b400;
+$purple: #7b1fa2;
+$white: #fff;
+$black: #1a0b18;
+
+.header {
+  background: $yellow;
+  border-radius: 0 0 20px 20px;
+  padding: .75rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo { display: flex; align-items: center; }
+
+.navDesktop {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+
+  a {
+    font-weight: 700;
+    color: $black;
+    text-decoration: none;
+    transition: color .2s ease;
+
+    &:hover { color: darken($black, 10%); }
+  }
+
+  @media (max-width: 860px) { display: none; }
+}
+
+.ctaDesktop {
+  background: $purple;
+  color: $white;
+  font-weight: 900;
+  padding: .6rem 1.1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+  transition: transform .15s ease, filter .15s ease;
+
+  &:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+
+  @media (max-width: 860px) { display: none; }
+}
+
+/* Hamburger button (shown on mobile) */
+.burger {
+  display: none;
+  width: 42px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  justify-self: end;
+  cursor: pointer;
+
+  @media (max-width: 860px) { display: inline-grid; place-items: center; }
+
+  span {
+    display: block;
+    width: 26px;
+    height: 3px;
+    background: $black;
+    border-radius: 2px;
+    transition: transform .2s ease, opacity .2s ease;
+    &:not(:last-child) { margin-bottom: 5px; }
+  }
+}
+
+/* Mobile menu wrapper (overlay) */
+.mobileWrap {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  opacity: 0;
+  transition: opacity .18s ease;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  z-index: 40;
+
+  @media (min-width: 861px) { display: none; }
+
+  &.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Slide-down panel */
+.mobilePanel {
+  background: $yellow;
+  border-radius: 0 0 16px 16px;
+  padding: .75rem 1rem 1rem;
+  transform: translateY(-100%);
+  transition: transform .22s ease;
+}
+
+.open .mobilePanel {
+  transform: translateY(0);
+}
+
+.navMobile {
+  display: grid;
+  gap: 1rem;
+  padding-top: .25rem;
+
+  a {
+    font-weight: 800;
+    color: $black;
+    text-decoration: none;
+  }
+}
+
+.ctaMobile {
+  display: inline-block;
+  margin-top: 1rem;
+  background: $purple;
+  color: $white;
+  font-weight: 900;
+  padding: .8rem 1.1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .mobileWrap, .mobilePanel, .ctaDesktop, .burger span {
+    transition: none !important;
+  }
+}

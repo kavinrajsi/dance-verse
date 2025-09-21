@@ -1,0 +1,32 @@
+$footer-bg: #7b1fa2;
+$link-color: #fff;
+$link-hover: #ddd;
+
+.footer {
+  background-color: $footer-bg;
+  color: $link-color;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-radius: 12px 12px 0 0;
+
+  .links {
+    display: flex;
+    gap: 2rem;
+
+    a {
+      text-decoration: none;
+      color: $link-color;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: $link-hover;
+      }
+    }
+  }
+
+  .copy {
+    font-size: 0.9rem;
+  }
+}

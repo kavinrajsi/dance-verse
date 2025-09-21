@@ -1,0 +1,150 @@
+$purple: #7b1fa2;
+$panel: #6f2cb6;
+$white: #fff;
+$yellow: #f2e600;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  width: min(980px, 100%);
+  background: $panel;
+  border-radius: 22px;
+  padding: 2rem 1.25rem 1.5rem;
+  position: relative;
+  color: $white;
+}
+
+.close {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.6);
+  background: transparent;
+  color: $white;
+  cursor: pointer;
+}
+
+.title {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 900;
+  color: $yellow;
+  margin: 0 0 .25rem;
+}
+
+.lead {
+  margin: 0 0 1.25rem;
+  font-weight: 800;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.row3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  label {
+    display: block;
+    margin-bottom: .35rem;
+    font-size: .95rem;
+    opacity: .95;
+  }
+
+  input {
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    background: #edeaf4;
+    padding: .9rem .85rem;
+    font-size: 1rem;
+    color: #1a1a1a;
+    outline: none;
+  }
+}
+
+.dropzone {
+  border: 2px dashed rgba(255,255,255,.7);
+  border-radius: 12px;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.dropContent {
+  text-align: center;
+
+  .cloud {
+    font-size: 2rem;
+    margin-bottom: .5rem;
+  }
+
+  p {
+    margin: 0 0 .75rem;
+    opacity: .9;
+  }
+}
+
+.primaryBtn {
+  display: inline-block;
+  background: #f4a300;
+  color: #1a0b18;
+  font-weight: 900;
+  padding: .75rem 1.25rem;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.25);
+}
+
+.fileNote {
+  margin-top: .5rem;
+  font-size: .95rem;
+}
+
+.error {
+  margin-top: .5rem;
+  font-size: .95rem;
+  font-weight: 700;
+  color: #ff4d4f;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit {
+  background: #f4a300;
+  color: #1a0b18;
+  font-weight: 900;
+  padding: .9rem 1.5rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,.25);
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
