@@ -46,7 +46,8 @@ $black: #1a0b18;
   font-weight: 900;
   padding: .6rem 1.1rem;
   border-radius: 10px;
-  text-decoration: none;
+  border: none;
+  cursor: pointer;
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
   transition: transform .15s ease, filter .15s ease;
 
@@ -133,13 +134,18 @@ $black: #1a0b18;
   font-weight: 900;
   padding: .8rem 1.1rem;
   border-radius: 10px;
-  text-decoration: none;
+  border: none;
+  cursor: pointer;
   box-shadow: inset 0 -3px 0 rgba(0,0,0,.25);
+  transition: transform .15s ease, filter .15s ease;
+  
+  &:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
 }
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  .mobileWrap, .mobilePanel, .ctaDesktop, .burger span {
+  .mobileWrap, .mobilePanel, .ctaDesktop, .ctaMobile, .burger span {
     transition: none !important;
   }
 }

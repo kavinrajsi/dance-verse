@@ -1,10 +1,9 @@
 // app/api/upload/route.js
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
-export const dynamic = "force-dynamic";   // ensure not cached
-export const runtime = "nodejs";          // fs requires Node runtime
+export const dynamic = "force-dynamic";
+export const runtime = "edge"; // Use edge runtime for better performance
 
 const sanitize = (s) =>
   String(s || "")
@@ -20,34 +19,67 @@ export async function POST(req) {
     const file = formData.get("file");
     const name = formData.get("name");
     const email = formData.get("email");
+    const phone = formData.get("phone");
+    const title = formData.get("title");
 
-    if (!file || typeof file === "string")
+    if (!file || typeof file === "string") {
       return NextResponse.json({ error: "No video provided" }, { status: 400 });
+    }
 
-    if (!file.type?.startsWith("video/"))
+    if (!file.type?.startsWith("video/")) {
       return NextResponse.json({ error: "File must be a video" }, { status: 400 });
+    }
 
-    // Build filename: name-email-timestamp-filename
+    // Check file size (limit to 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ 
+        error: "File size must be less than 50MB" 
+      }, { status: 400 });
+    }
+
+    // Build filename
     const original = file.name || "video.mp4";
-    const ext = path.extname(original) || ".mp4";
-    const base = path.basename(original, ext);
+    const ext = original.split('.').pop() || "mp4";
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const finalName = `${sanitize(name)}-${sanitize(email)}-${ts}.${ext}`;
 
-    const ts = new Date().toISOString().replace(/[:.]/g, "-"); // safe for files
-    const finalName = `${sanitize(name)}-${sanitize(email)}-${ts}-${sanitize(base)}${ext}`;
+    // Upload to Vercel Blob
+    const blob = await put(finalName, file, {
+      access: 'public',
+      contentType: file.type,
+    });
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
+    // Store submission metadata (you should save this to a database)
+    const submissionData = {
+      name,
+      email,
+      phone,
+      title,
+      filename: finalName,
+      originalName: original,
+      size: file.size,
+      type: file.type,
+      timestamp: new Date().toISOString(),
+      blobUrl: blob.url,
+      downloadUrl: blob.downloadUrl,
+    };
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(path.join(uploadDir, finalName), buffer);
+    // Log submission (in production, save to database)
+    console.log("Video submission:", submissionData);
 
-    // public URL
-    const url = `/uploads/${finalName}`;
+    return NextResponse.json({ 
+      ok: true, 
+      filename: finalName, 
+      url: blob.url,
+      downloadUrl: blob.downloadUrl,
+      message: "Video uploaded successfully to Vercel Blob!" 
+    });
 
-    return NextResponse.json({ ok: true, filename: finalName, url });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    console.error("Upload error:", err);
+    return NextResponse.json({ 
+      error: err.message || "Upload failed. Please try again." 
+    }, { status: 500 });
   }
 }
