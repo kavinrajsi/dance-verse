@@ -1,54 +1,49 @@
-$yellow: #f2e600;
-$bg-dark: #200018;
-$text-light: #fff;
-$text-muted: #ddd;
-
 .about {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
-  gap: 2rem;
-  background: $bg-dark;
-  padding: 3rem 1.5rem;
-  border-radius: 12px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    text-align: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  @media (min-width: 768px) {
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
-}
-
-.imageWrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1; // keeps square shape
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.image {
-  object-fit: cover;
-}
-
-.content {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.title {
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 900;
-  margin-bottom: 1rem;
-  color: $yellow;
-}
-
-.text {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: $text-light;
-
-  strong {
-    color: $text-muted;
-    font-weight: 700;
+  .about__wrapper {
+    display: grid;
+    gap: 20px;
+    align-items: center;
+    grid-template-columns: 1fr;
+    @media (min-width: 768px) {
+    max-width: 1030px;
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .image{
+    width: 100%;
+    height: auto;
+    @media (min-width: 768px) {
+      width: 400px;
+    }
+  }
+  .content {
+    @media (min-width: 768px) {
+      max-width: 554px;
+      margin-right: 0;
+      margin-left: inherit;
+    }
+    .title {
+      font-family: var(--font-gamepaused);
+      font-style: normal;
+      font-weight: 400;
+      font-size: 48px;
+      line-height: 53px;
+      color: #f2eb1f;
+      padding-bottom: 16px;
+    }
+    .text {
+      font-family: "Inter";
+      font-style: normal;
+      font-weight: 400;
+      font-size: 18px;
+      line-height: 22px;
+      color: #ffffff;
+    }
   }
 }

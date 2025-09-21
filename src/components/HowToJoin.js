@@ -36,39 +36,42 @@ export default function HowToJoin() {
 
   return (
     <>
-      <section className={styles.section} id="how-to-join">
-        <h2 className={styles.heading}>How to Join the DanceVerse</h2>
-
-        <div className={styles.grid}>
-          {steps.map((s, i) => (
-            <article key={i} className={styles.card}>
-              <div className={styles.topRow}>
-                <div className={styles.stepLabel}>{s.step}</div>
-                <div className={styles.icon} aria-hidden="true">
-                  <Image
-                    src={s.icon}
-                    alt="" // decorative, so empty alt
-                    width={48}
-                    height={48}
-                  />
+      <section className={styles.howtojoin} id="how-to-join">
+        <div className={`container ${styles.howtojoinWrapper}`}>
+          <h2 className={styles.heading}>How to Join the DanceVerse</h2>
+          <div className={styles.grid}>
+            {steps.map((s, i) => (
+              <article key={i} className={styles.card}>
+                <div className={styles.topRow}>
+                  <div>
+                    <div className={styles.stepLabel}>{s.step}</div>
+                    <h3 className={styles.cardTitle}>{s.title}</h3>
+                  </div>
+                  <div className={styles.icon} aria-hidden="true">
+                    <Image
+                      src={s.icon}
+                      alt="" // decorative, so empty alt
+                      width={48}
+                      height={48}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <h3 className={styles.cardTitle}>{s.title}</h3>
-              <p className={styles.cardBody}>{s.body}</p>
+                <p className={styles.cardBody}>{s.body}</p>
 
-              {s.cta && (
-                <div className={styles.ctaWrap}>
-                  <button 
-                    className={styles.ctaBtn} 
-                    onClick={handleSubmitClick}
-                  >
-                    {s.cta.label}
-                  </button>
-                </div>
-              )}
-            </article>
-          ))}
+                {s.cta && (
+                  <div className={styles.ctaWrap}>
+                    <button
+                      className={styles.ctaBtn}
+                      onClick={handleSubmitClick}
+                    >
+                      {s.cta.label}
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

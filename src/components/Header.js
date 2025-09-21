@@ -53,7 +53,7 @@ export default function Header() {
   return (
     <>
       <header className={styles.header}>
-        <div className={styles.inner}>
+       <div className={`${styles.inner} container`}>
           {/* Logo */}
           <Link href="/" className={styles.logo} aria-label="DanceVerse home">
             <Image
@@ -71,20 +71,13 @@ export default function Header() {
             <Link href="#about">Who we are</Link>
             <Link href="#prizes">Prices</Link>
             <Link href="#watch-moves">Watch the moves</Link>
+            <Link href="#" className={styles.ctaDesktop} onClick={handleRegisterClick}>Register here</Link>
           </nav>
-
-          {/* Desktop CTA */}
-          <button 
-            className={styles.ctaDesktop}
-            onClick={handleRegisterClick}
-          >
-            Register here
-          </button>
 
           {/* Mobile hamburger */}
           <button
             ref={btnRef}
-            className={styles.burger}
+              className={`${styles.burger} ${open ? styles.burgerActive : ""}`}
             aria-label="Open menu"
             aria-expanded={open}
             aria-controls="mobile-menu"
@@ -98,7 +91,7 @@ export default function Header() {
 
         {/* Mobile menu */}
         <div
-          className={`${styles.mobileWrap} ${open ? styles.open : ""}`}
+          className={`container ${styles.mobileWrap} ${open ? styles.open : ""}`}
           aria-hidden={!open}
         >
           <div
@@ -107,7 +100,7 @@ export default function Header() {
             ref={panelRef}
             role="menu"
           >
-            <nav className={styles.navMobile}>
+            <nav className={`container ${styles.navMobile}`}>
               <Link href="/#how-to-join" role="menuitem" onClick={closeAndGo}>
                 How to Join
               </Link>
@@ -120,15 +113,8 @@ export default function Header() {
               <Link href="/#watch-moves" role="menuitem" onClick={closeAndGo}>
                 Watch the moves
               </Link>
+              <Link href="#"  role="menuitem" className={styles.ctaMobile} onClick={handleRegisterClick}>Register here</Link>
             </nav>
-
-            <button
-              className={styles.ctaMobile}
-              role="menuitem"
-              onClick={handleRegisterClick}
-            >
-              Register here
-            </button>
           </div>
         </div>
       </header>

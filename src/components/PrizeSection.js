@@ -25,29 +25,36 @@ const prizes = [
 export default function PrizeSection() {
   return (
     <section className={styles.prizeSection} id="prizes">
-      <div className={styles.grid}>
-        {prizes.map((item, i) => (
-          <div key={i} className={styles.card}>
-            <div className={styles.bg}>
-              <Image
-                src={item.img}
-                alt={item.title}
-                fill
-                className={styles.image}
-                priority={i === 0}
-              />
+      <div className={`container ${styles.prizeSectionWrapper}`}>
+        <div className={styles.grid}>
+          {prizes.map((item, i) => (
+            <div key={i} className={styles.card}>
+              <div className={styles.bg}>
+                <Image
+                  src={item.img}
+                  alt={item.title}
+                  width={400}
+                  height={363}
+                  className={styles.image}
+                  priority={i === 0}
+                />
+              </div>
+              <div className={styles.detailsContent}>
+              <h3 className={styles.title}>{item.title}</h3>
+              <div className={styles.details}>
+                <p>
+                  <strong>Winners - </strong>
+                  {item.winner}
+                </p>
+                <p>
+                  <strong>Runner Up - </strong>
+                  {item.runnerUp}
+                </p>
+              </div>
+              </div>
             </div>
-            <h3 className={styles.title}>{item.title}</h3>
-            <div className={styles.details}>
-              <p>
-                <strong>Winners - </strong>{item.winner}
-              </p>
-              <p>
-                <strong>Runner Up - </strong>{item.runnerUp}
-              </p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -1,68 +1,68 @@
-$yellow: #f2e600;
-$purple: #7b1fa2;
-$card-bg: rgba(0, 0, 0, 0.6);
-
-.prizeSection {
-  background: #200018; // dark base
-  padding: 3rem 1.5rem;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-  justify-items: center;
-}
-
-.card {
-  position: relative;
-  width: 100%;
-  max-width: 360px;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 2px solid $yellow;
-  text-align: center;
-  padding: 1.5rem 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  color: #fff;
-}
-
-.bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.image {
-  object-fit: cover;
-  filter: brightness(0.5);
-}
-
-.title {
-  position: relative;
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: $yellow;
-  margin-bottom: 1rem;
-  z-index: 1;
-}
-
-.details {
-  position: relative;
-  background: $card-bg;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  line-height: 1.5;
-  z-index: 1;
-
-  p {
-    margin: 0.25rem 0;
+.prizeSectionWrapper {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  @media (min-width: 768px) {
+    padding-bottom: 120px;
   }
+  .grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+    @media (min-width: 768px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
 
-  strong {
-    font-weight: 700;
+    .card {
+      position: relative;
+      background: rgba(30, 1, 30, 0.5);
+      border: 1px solid #f2eb1f;
+      border-radius: 20px;
+      border: 20px;
+
+      img {
+        width: 100%;
+        height: 363px;
+      }
+      .detailsContent {
+        padding: 24px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .title {
+        font-family: var(--font-gamepaused);
+        font-style: normal;
+        font-weight: 400;
+        font-size: 32px;
+        line-height: 35px;
+        text-align: center;
+        /* green */
+        color: #f2eb1f;
+        padding-bottom: 100px;
+        @media (min-width: 768px) {
+          padding-bottom: 200px;
+        }
+      }
+      .details {
+        p {
+          text-align: center;
+          font-family: "Inter";
+          font-style: normal;
+          font-weight: 700;
+          font-size: 30px;
+          line-height: 36px;
+          color: #ffffff;
+        }
+      }
+    }
   }
 }
