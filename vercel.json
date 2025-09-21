@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "src/app/api/upload/route.js": {
+      "maxDuration": 60
+    }
+  },
+  "limits": {
+    "duration": 60000
+  }
+}

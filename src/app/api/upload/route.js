@@ -6,6 +6,16 @@ import { saveSubmission } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const runtime = "edge"; // Use edge runtime for better performance
 
+// Configure max duration and size
+export const maxDuration = 60; // 60 seconds
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+}
+
 const sanitize = (s) =>
   String(s || "")
     .trim()
@@ -13,8 +23,27 @@ const sanitize = (s) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+// Helper function to format file size
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 export async function POST(req) {
   try {
+    // Check content length early
+    const contentLength = req.headers.get('content-length');
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    
+    if (contentLength && parseInt(contentLength) > maxSize) {
+      return NextResponse.json({ 
+        error: "File too large. Maximum file size is 50MB." 
+      }, { status: 413 });
+    }
+
     const formData = await req.formData();
 
     const file = formData.get("file");
@@ -31,11 +60,17 @@ export async function POST(req) {
       return NextResponse.json({ error: "File must be a video" }, { status: 400 });
     }
 
-    // Check file size (limit to 50MB)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Check file size again after parsing
     if (file.size > maxSize) {
       return NextResponse.json({ 
-        error: "File size must be less than 50MB" 
+        error: `File size (${formatFileSize(file.size)}) exceeds the 50MB limit.` 
+      }, { status: 413 });
+    }
+
+    // Validate required fields
+    if (!name?.trim() || !email?.trim() || !phone?.trim() || !title?.trim()) {
+      return NextResponse.json({ 
+        error: "All fields (name, email, phone, title) are required" 
       }, { status: 400 });
     }
 
@@ -92,6 +127,14 @@ export async function POST(req) {
 
   } catch (err) {
     console.error("Upload error:", err);
+    
+    // Handle specific error types
+    if (err.name === 'PayloadTooLargeError' || err.message?.includes('413')) {
+      return NextResponse.json({ 
+        error: "File too large. Maximum file size is 50MB." 
+      }, { status: 413 });
+    }
+    
     return NextResponse.json({ 
       error: err.message || "Upload failed. Please try again." 
     }, { status: 500 });

@@ -193,8 +193,21 @@ export default function UploadForm({ onClose }) {
     // Create upload promise and store reference
     const uploadPromise = fetch("/api/upload", { method: "POST", body: fd })
       .then(async (res) => {
+        // Handle non-JSON responses (like 413 errors)
+        const contentType = res.headers.get('content-type');
+        
+        if (!contentType || !contentType.includes('application/json')) {
+          // Server returned HTML or plain text (likely an error page)
+          if (res.status === 413) {
+            throw new Error("File too large. Maximum file size is 50MB.");
+          }
+          throw new Error(`Server error (${res.status}). Please try again.`);
+        }
+        
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Upload failed");
+        if (!res.ok) {
+          throw new Error(data.error || `Upload failed (${res.status})`);
+        }
         return data;
       })
       .then((data) => {
