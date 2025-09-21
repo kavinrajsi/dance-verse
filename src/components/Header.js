@@ -70,7 +70,7 @@ export default function Header() {
             <Link href="/#how-to-join">How to Join</Link>
             <Link href="/#about">Who we are</Link>
             <Link href="/#rewards">Rewards</Link>
-            <Link href="/#watch-moves">Watch the moves</Link>
+            {/* <Link href="/#watch-moves">Watch the moves</Link> */}
             <Link href="#" className={styles.ctaDesktop} onClick={handleRegisterClick}>Register here</Link>
           </nav>
 
