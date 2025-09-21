@@ -154,6 +154,7 @@ h3,
 		scroll-behavior: smooth;
 	}
 }
+
 body {
 	background: #1e011e;
 	overflow-x: hidden;
@@ -183,5 +184,44 @@ body {
 	margin-right: auto;
 	@media (min-width: 1200px) {
 		max-width: 1320px;
+	}
+}
+
+.page__policy {
+	padding: 40px 0;
+	header,
+	section {
+		padding-top: 10px;
+		padding-bottom: 20px;
+		h1,
+		h2,
+		h3,
+		h4 {
+			padding-bottom: 10px;
+			font-style: normal;
+			font-weight: 400;
+			font-size: 20px;
+			line-height: normal;
+			color: #ffffff;
+		}
+
+		ul li,
+		p {
+			font-family: "Inter";
+			font-style: normal;
+			font-weight: 400;
+			font-size: 18px;
+			line-height: 22px;
+			color: #ffffff;
+		}
+		a {
+			color: #ffffff;
+		}
+		ul {
+			padding-left: 40px;
+			li {
+				list-style: disc;
+			}
+		}
 	}
 }

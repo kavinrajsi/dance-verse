@@ -24,7 +24,7 @@ const prizes = [
 
 export default function PrizeSection() {
   return (
-    <section className={styles.prizeSection} id="prizes">
+    <section className={styles.prizeSection} id="rewards">
       <div className={`container ${styles.prizeSectionWrapper}`}>
         <div className={styles.grid}>
           {prizes.map((item, i) => (

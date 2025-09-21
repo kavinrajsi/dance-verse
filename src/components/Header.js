@@ -67,10 +67,10 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className={styles.navDesktop} aria-label="Primary">
-            <Link href="#how-to-join">How to Join</Link>
-            <Link href="#about">Who we are</Link>
-            <Link href="#prizes">Prices</Link>
-            <Link href="#watch-moves">Watch the moves</Link>
+            <Link href="/#how-to-join">How to Join</Link>
+            <Link href="/#about">Who we are</Link>
+            <Link href="/#rewards">Rewards</Link>
+            <Link href="/#watch-moves">Watch the moves</Link>
             <Link href="#" className={styles.ctaDesktop} onClick={handleRegisterClick}>Register here</Link>
           </nav>
 
@@ -107,12 +107,12 @@ export default function Header() {
               <Link href="/#about" role="menuitem" onClick={closeAndGo}>
                 Who we are
               </Link>
-              <Link href="/#prizes" role="menuitem" onClick={closeAndGo}>
-                Prices
+              <Link href="/#rewards" role="menuitem" onClick={closeAndGo}>
+                Rewards
               </Link>
-              <Link href="/#watch-moves" role="menuitem" onClick={closeAndGo}>
+              {/* <Link href="/#watch-moves" role="menuitem" onClick={closeAndGo}>
                 Watch the moves
-              </Link>
+              </Link> */}
               <Link href="#"  role="menuitem" className={styles.ctaMobile} onClick={handleRegisterClick}>Register here</Link>
             </nav>
           </div>

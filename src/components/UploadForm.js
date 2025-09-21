@@ -10,16 +10,16 @@ export default function UploadForm({ onClose }) {
   const [uploading, setUploading] = useState(false);
   const [resultUrl, setResultUrl] = useState(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  
+
   // Form validation errors
   const [errors, setErrors] = useState({
     name: "",
     email: "",
     phone: "",
     title: "",
-    form: "" // General form error
+    form: "", // General form error
   });
-  
+
   // Reference to ongoing upload
   const uploadPromiseRef = useRef(null);
 
@@ -29,7 +29,7 @@ export default function UploadForm({ onClose }) {
       const timer = setTimeout(() => {
         onClose();
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     }
   }, [uploadSuccess, onClose]);
@@ -39,17 +39,17 @@ export default function UploadForm({ onClose }) {
 
   // Format file size for display
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   // Validate individual field
   const validateField = (name, value) => {
     let error = "";
-    
+
     switch (name) {
       case "name":
         if (!value.trim()) {
@@ -58,7 +58,7 @@ export default function UploadForm({ onClose }) {
           error = "Name must be at least 2 characters";
         }
         break;
-        
+
       case "email":
         if (!value.trim()) {
           error = "Email is required";
@@ -66,7 +66,7 @@ export default function UploadForm({ onClose }) {
           error = "Please enter a valid email address";
         }
         break;
-        
+
       case "phone":
         if (!value.trim()) {
           error = "Mobile number is required";
@@ -74,7 +74,7 @@ export default function UploadForm({ onClose }) {
           error = "Please enter a valid mobile number";
         }
         break;
-        
+
       case "title":
         if (!value.trim()) {
           error = "Video title is required";
@@ -82,11 +82,11 @@ export default function UploadForm({ onClose }) {
           error = "Title must be at least 3 characters";
         }
         break;
-        
+
       default:
         break;
     }
-    
+
     return error;
   };
 
@@ -94,33 +94,33 @@ export default function UploadForm({ onClose }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const error = validateField(name, value);
-    
-    setErrors(prev => ({
+
+    setErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
   };
 
   // Validate all fields
   const validateForm = (formData) => {
     const newErrors = {};
-    const fields = ['name', 'email', 'phone', 'title'];
-    
-    fields.forEach(field => {
+    const fields = ["name", "email", "phone", "title"];
+
+    fields.forEach((field) => {
       const value = formData.get(field) || "";
       newErrors[field] = validateField(field, value);
     });
-    
+
     setErrors(newErrors);
-    
+
     // Return true if no errors
-    return Object.values(newErrors).every(error => error === "");
+    return Object.values(newErrors).every((error) => error === "");
   };
 
   // Validate & set file
   const handleFile = (f) => {
     if (!f) return;
-    
+
     if (!f.type.startsWith("video/")) {
       setError("Only video files are allowed.");
       setFile(null);
@@ -159,28 +159,28 @@ export default function UploadForm({ onClose }) {
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const formEl = e.currentTarget;
     const fd = new FormData(formEl);
-    
+
     // Clear previous form error
-    setErrors(prev => ({ ...prev, form: "" }));
-    
+    setErrors((prev) => ({ ...prev, form: "" }));
+
     // Validate form
     const isFormValid = validateForm(fd);
-    
+
     if (!file || error) {
-      setErrors(prev => ({ 
-        ...prev, 
-        form: "Please upload a valid video (≤ 1 min, ≤ 50MB)" 
+      setErrors((prev) => ({
+        ...prev,
+        form: "Please upload a valid video (≤ 1 min, ≤ 50MB)",
       }));
       return;
     }
-    
+
     if (!isFormValid) {
-      setErrors(prev => ({ 
-        ...prev, 
-        form: "Please fix the errors above before submitting" 
+      setErrors((prev) => ({
+        ...prev,
+        form: "Please fix the errors above before submitting",
       }));
       return;
     }
@@ -200,23 +200,23 @@ export default function UploadForm({ onClose }) {
       .then((data) => {
         setResultUrl(data.url);
         setUploadSuccess(true);
-        
+
         // Show browser notification if possible
         if ("Notification" in window && Notification.permission === "granted") {
           new Notification("DanceVerse Upload Complete!", {
             body: "Your dance video has been uploaded successfully!",
-            icon: "/logo.svg" // You can use your logo here
+            icon: "/logo.svg", // You can use your logo here
           });
         }
-        
+
         return data;
       })
       .catch((err) => {
         // Only show error if modal is still open
         if (!uploadSuccess) {
-          setErrors(prev => ({ 
-            ...prev, 
-            form: err.message || "Upload failed. Please try again." 
+          setErrors((prev) => ({
+            ...prev,
+            form: err.message || "Upload failed. Please try again.",
           }));
         }
         console.error("Upload error:", err);
@@ -238,9 +238,9 @@ export default function UploadForm({ onClose }) {
       if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
       }
-      
+
       // Show a brief message that upload continues
-      const notification = document.createElement('div');
+      const notification = document.createElement("div");
       notification.style.cssText = `
         position: fixed;
         top: 20px;
@@ -256,26 +256,30 @@ export default function UploadForm({ onClose }) {
       `;
       notification.textContent = "Upload continuing in background...";
       document.body.appendChild(notification);
-      
+
       // Remove notification after 3 seconds
       setTimeout(() => {
         if (document.body.contains(notification)) {
           document.body.removeChild(notification);
         }
       }, 3000);
-      
+
       // Upload will continue in background
-      uploadPromiseRef.current.then((data) => {
-        // Show success notification
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification("DanceVerse Upload Complete!", {
-            body: "Your dance video has been uploaded successfully!",
-            icon: "/logo.svg"
-          });
-        } else {
-          // Fallback: show another temporary notification
-          const successNotification = document.createElement('div');
-          successNotification.style.cssText = `
+      uploadPromiseRef.current
+        .then((data) => {
+          // Show success notification
+          if (
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            new Notification("DanceVerse Upload Complete!", {
+              body: "Your dance video has been uploaded successfully!",
+              icon: "/logo.svg",
+            });
+          } else {
+            // Fallback: show another temporary notification
+            const successNotification = document.createElement("div");
+            successNotification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
@@ -288,19 +292,20 @@ export default function UploadForm({ onClose }) {
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
           `;
-          successNotification.textContent = "✅ Video uploaded successfully!";
-          document.body.appendChild(successNotification);
-          
-          setTimeout(() => {
-            if (document.body.contains(successNotification)) {
-              document.body.removeChild(successNotification);
-            }
-          }, 5000);
-        }
-      }).catch((err) => {
-        // Show error notification
-        const errorNotification = document.createElement('div');
-        errorNotification.style.cssText = `
+            successNotification.textContent = "✅ Video uploaded successfully!";
+            document.body.appendChild(successNotification);
+
+            setTimeout(() => {
+              if (document.body.contains(successNotification)) {
+                document.body.removeChild(successNotification);
+              }
+            }, 5000);
+          }
+        })
+        .catch((err) => {
+          // Show error notification
+          const errorNotification = document.createElement("div");
+          errorNotification.style.cssText = `
           position: fixed;
           top: 20px;
           right: 20px;
@@ -313,17 +318,17 @@ export default function UploadForm({ onClose }) {
           font-weight: 600;
           box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
-        errorNotification.textContent = "❌ Upload failed: " + err.message;
-        document.body.appendChild(errorNotification);
-        
-        setTimeout(() => {
-          if (document.body.contains(errorNotification)) {
-            document.body.removeChild(errorNotification);
-          }
-        }, 5000);
-      });
+          errorNotification.textContent = "❌ Upload failed: " + err.message;
+          document.body.appendChild(errorNotification);
+
+          setTimeout(() => {
+            if (document.body.contains(errorNotification)) {
+              document.body.removeChild(errorNotification);
+            }
+          }, 5000);
+        });
     }
-    
+
     // Close the modal
     onClose();
   };
@@ -351,52 +356,58 @@ export default function UploadForm({ onClose }) {
               <div className={styles.row3}>
                 <div className={styles.field}>
                   <label>Name / Dance Group Name</label>
-                  <input 
-                    type="text" 
-                    name="name" 
+                  <input
+                    type="text"
+                    name="name"
                     onChange={handleInputChange}
                     className={errors.name ? styles.inputError : ""}
                   />
-                  {errors.name && <span className={styles.errorText}>{errors.name}</span>}
+                  {errors.name && (
+                    <span className={styles.errorText}>{errors.name}</span>
+                  )}
                 </div>
                 <div className={styles.field}>
                   <label>Email Address</label>
-                  <input 
-                    type="email" 
-                    name="email" 
+                  <input
+                    type="email"
+                    name="email"
                     onChange={handleInputChange}
                     className={errors.email ? styles.inputError : ""}
                   />
-                  {errors.email && <span className={styles.errorText}>{errors.email}</span>}
+                  {errors.email && (
+                    <span className={styles.errorText}>{errors.email}</span>
+                  )}
                 </div>
                 <div className={styles.field}>
                   <label>Mobile Number</label>
-                  <input 
-                    type="tel" 
-                    name="phone" 
+                  <input
+                    type="tel"
+                    name="phone"
                     onChange={handleInputChange}
                     className={errors.phone ? styles.inputError : ""}
                   />
-                  {errors.phone && <span className={styles.errorText}>{errors.phone}</span>}
+                  {errors.phone && (
+                    <span className={styles.errorText}>{errors.phone}</span>
+                  )}
                 </div>
               </div>
 
               <div className={styles.field}>
                 <label>Video Title</label>
-                <input 
-                  type="text" 
-                  name="title" 
+                <input
+                  type="text"
+                  name="title"
                   onChange={handleInputChange}
                   className={errors.title ? styles.inputError : ""}
                 />
-                {errors.title && <span className={styles.errorText}>{errors.title}</span>}
+                {errors.title && (
+                  <span className={styles.errorText}>{errors.title}</span>
+                )}
               </div>
 
               {/* General form error */}
               {errors.form && (
-                <div className={styles.formError}>
-                  {errors.form}
-                </div>
+                <div className={styles.formError}>{errors.form}</div>
               )}
 
               <div
@@ -406,10 +417,28 @@ export default function UploadForm({ onClose }) {
                 onDrop={onDrop}
               >
                 <div className={styles.dropContent}>
-                  <div className={styles.cloud}>☁️⬆️</div>
+                  <div className={styles.cloud}>
+                    <svg
+                      width="56"
+                      height="51"
+                      viewBox="0 0 56 51"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M48.7821 17.9521V17.4111C48.6668 12.8307 46.7442 8.48191 43.4338 5.31411C40.1235 2.14631 35.6943 0.416781 31.1133 0.503081C27.7015 0.475242 24.3544 1.4339 21.4748 3.2637C18.5951 5.09349 16.3055 7.71646 14.8816 10.817C10.8724 11.2642 7.16675 13.1675 4.46774 16.1657C1.76874 19.1639 0.264091 23.0484 0.239258 27.0825C0.243691 29.2199 0.669364 31.3355 1.49194 33.3083C2.31452 35.2812 3.51787 37.0725 5.03319 38.58C6.54851 40.0875 8.3461 41.2815 10.3232 42.0938C12.3003 42.9061 14.418 43.3208 16.5555 43.3141H22.896V39.9325H16.5555C13.2874 39.7557 10.2079 38.3465 7.93762 35.989C5.66738 33.6316 4.37522 30.5011 4.32161 27.2287C4.268 23.9563 5.45692 20.7852 7.64872 18.3546C9.84053 15.9241 12.8722 14.4148 16.1328 14.1309H17.2656L17.6545 13.0657C18.7032 10.3421 20.5626 8.00598 22.9817 6.37313C25.4007 4.74028 28.2627 3.88937 31.1809 3.93541C34.8652 3.84884 38.4345 5.22204 41.1107 7.75575C43.7869 10.2894 45.3532 13.7783 45.4682 17.4618C45.4915 17.9124 45.4915 18.3639 45.4682 18.8144L45.3329 20.0318L46.4319 20.5391C48.5575 21.4967 50.2885 23.1572 51.3335 25.2413C52.3785 27.3253 52.6738 29.7057 52.1697 31.982C51.6657 34.2582 50.393 36.2913 48.5658 37.7394C46.7386 39.1874 44.4685 39.9619 42.1373 39.9325H33.0408V43.3141H42.1373C45.1443 43.3357 48.0728 42.3546 50.46 40.526C52.8472 38.6973 54.5569 36.1252 55.3191 33.2163C56.0812 30.3074 55.8523 27.2274 54.6685 24.4631C53.4847 21.6988 51.4134 19.4078 48.7821 17.9521Z"
+                        fill="white"
+                      />
+                      <path
+                        d="M35.2051 32.9156C35.5424 32.921 35.8736 32.8253 36.156 32.641C36.4385 32.4566 36.6594 32.192 36.7903 31.8811C36.9212 31.5702 36.9562 31.2273 36.8906 30.8964C36.825 30.5655 36.662 30.2618 36.4225 30.0243L27.9685 21.5703L19.5145 30.0243C19.2375 30.3478 19.0927 30.7638 19.1092 31.1894C19.1256 31.6149 19.302 32.0186 19.6031 32.3197C19.9043 32.6208 20.3079 32.7972 20.7335 32.8136C21.159 32.8301 21.5751 32.6853 21.8985 32.4083L26.2777 28.0968V48.8091C26.2777 49.2575 26.4558 49.6876 26.7729 50.0047C27.09 50.3218 27.5201 50.4999 27.9685 50.4999C28.4169 50.4999 28.847 50.3218 29.1641 50.0047C29.4811 49.6876 29.6593 49.2575 29.6593 48.8091V28.0968L34.0046 32.4422C34.3265 32.7525 34.7581 32.9227 35.2051 32.9156Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </div>
                   <p>Drag &amp; drop your edited video here</p>
                   <p className={styles.requirements}>
-                    Max file size: <strong>50MB</strong> | Max duration: <strong>1 minute</strong>
+                    Max file size: <strong>50MB</strong> | Max duration:{" "}
+                    <strong>1 minute</strong>
                   </p>
 
                   <label className={styles.primaryBtn}>
@@ -454,7 +483,8 @@ export default function UploadForm({ onClose }) {
             <div className={styles.successIcon}>✅</div>
             <h2 className={styles.successTitle}>Successfully Uploaded!</h2>
             <p className={styles.successMessage}>
-              Your video has been uploaded successfully. Thank you for being part of the DanceVerse!
+              Your video has been uploaded successfully. Thank you for being
+              part of the DanceVerse!
             </p>
             <div className={styles.successFooter}>
               <p>This window will close automatically...</p>
