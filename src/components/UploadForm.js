@@ -442,7 +442,8 @@ export default function UploadForm({ onClose }) {
                 </button>
                 {uploading && (
                   <p className={styles.uploadNote}>
-                    You can close this window - upload will continue in background
+                    Do not close the window
+                    {/* You can close this window - upload will continue in background */}
                   </p>
                 )}
               </div>

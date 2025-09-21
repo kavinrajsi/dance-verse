@@ -1,6 +1,7 @@
 // app/api/upload/route.js
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
+import { saveSubmission } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 export const runtime = "edge"; // Use edge runtime for better performance
@@ -50,31 +51,44 @@ export async function POST(req) {
       contentType: file.type,
     });
 
-    // Store submission metadata (you should save this to a database)
+    // Prepare submission data
     const submissionData = {
-      name,
-      email,
-      phone,
-      title,
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      title: title.trim(),
       filename: finalName,
-      originalName: original,
-      size: file.size,
-      type: file.type,
-      timestamp: new Date().toISOString(),
-      blobUrl: blob.url,
-      downloadUrl: blob.downloadUrl,
+      blob_url: blob.url,
+      download_url: blob.downloadUrl,
+      file_size: file.size,
+      file_type: file.type
     };
 
-    // Log submission (in production, save to database)
-    console.log("Video submission:", submissionData);
-
-    return NextResponse.json({ 
-      ok: true, 
-      filename: finalName, 
-      url: blob.url,
-      downloadUrl: blob.downloadUrl,
-      message: "Video uploaded successfully to Vercel Blob!" 
-    });
+    // Try to save to database (optional - won't fail if DB is not configured)
+    try {
+      const savedSubmission = await saveSubmission(submissionData);
+      
+      return NextResponse.json({ 
+        ok: true, 
+        filename: finalName, 
+        url: blob.url,
+        downloadUrl: blob.downloadUrl,
+        submissionId: savedSubmission?.id,
+        message: "Video uploaded and saved successfully!" 
+      });
+      
+    } catch (dbError) {
+      console.error("Database save error (continuing anyway):", dbError);
+      
+      // Video was uploaded successfully, database save failed but that's okay
+      return NextResponse.json({ 
+        ok: true, 
+        filename: finalName, 
+        url: blob.url,
+        downloadUrl: blob.downloadUrl,
+        message: "Video uploaded successfully!" 
+      });
+    }
 
   } catch (err) {
     console.error("Upload error:", err);

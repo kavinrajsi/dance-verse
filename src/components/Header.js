@@ -108,16 +108,16 @@ export default function Header() {
             role="menu"
           >
             <nav className={styles.navMobile}>
-              <Link href="#how-to-join" role="menuitem" onClick={closeAndGo}>
+              <Link href="/#how-to-join" role="menuitem" onClick={closeAndGo}>
                 How to Join
               </Link>
-              <Link href="#about" role="menuitem" onClick={closeAndGo}>
+              <Link href="/#about" role="menuitem" onClick={closeAndGo}>
                 Who we are
               </Link>
-              <Link href="#prizes" role="menuitem" onClick={closeAndGo}>
+              <Link href="/#prizes" role="menuitem" onClick={closeAndGo}>
                 Prices
               </Link>
-              <Link href="#watch-moves" role="menuitem" onClick={closeAndGo}>
+              <Link href="/#watch-moves" role="menuitem" onClick={closeAndGo}>
                 Watch the moves
               </Link>
             </nav>
