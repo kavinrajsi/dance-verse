@@ -1,4 +1,6 @@
 // src/app/admin/admin.module.scss
+@use "sass:color";
+
 $purple: #7b1fa2;
 $yellow: #f2e600;
 $bg-dark: #1E011E;
@@ -66,7 +68,7 @@ $success: #52c41a;
     transition: all 0.2s ease;
 
     &:hover:not(:disabled) {
-      background: darken($purple, 10%);
+      background: color.adjust($purple, $lightness: -10%);
     }
 
     &:disabled {
@@ -101,7 +103,7 @@ $success: #52c41a;
   font-weight: 600;
 
   &:hover {
-    background: darken($error, 10%);
+    background: color.adjust($error, $lightness: -10%);
   }
 }
 
@@ -150,7 +152,7 @@ $success: #52c41a;
     font-weight: 600;
 
     &:hover {
-      background: darken($purple, 10%);
+      background: color.adjust($purple, $lightness: -10%);
     }
   }
 }
@@ -187,7 +189,7 @@ $success: #52c41a;
     font-weight: 600;
 
     &:hover {
-      background: darken($success, 10%);
+      background: color.adjust($success, $lightness: -10%);
     }
   }
 }
@@ -218,7 +220,7 @@ $success: #52c41a;
     cursor: pointer;
 
     &:hover {
-      background: darken($error, 10%);
+      background: color.adjust($error, $lightness: -10%);
     }
   }
 }
@@ -274,7 +276,7 @@ $success: #52c41a;
   display: inline-block;
 
   &:hover {
-    background: darken($purple, 10%);
+    background: color.adjust($purple, $lightness: -10%);
   }
 }
 
@@ -289,7 +291,7 @@ $success: #52c41a;
   cursor: pointer;
 
   &:hover {
-    background: darken($error, 10%);
+    background: color.adjust($error, $lightness: -10%);
   }
 }
 
