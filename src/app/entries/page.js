@@ -144,13 +144,39 @@ export default function EntriesPage() {
       {filteredEntries.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>🎭</div>
-          <h3>No entries found</h3>
-          <p>
-            {searchTerm 
-              ? `No entries match "${searchTerm}"`
-              : "No dance entries have been submitted yet."
-            }
-          </p>
+          {searchTerm ? (
+            <>
+              <h3>No entries found</h3>
+              <p>No entries match "{searchTerm}"</p>
+              <button 
+                onClick={() => setSearchTerm("")} 
+                className={styles.clearSearch}
+              >
+                Clear Search
+              </button>
+            </>
+          ) : entries.length === 0 ? (
+            <>
+              <h3>No dance entries yet</h3>
+              <p>
+                Be the first to showcase your talent! Upload your dance video and start the revolution.
+              </p>
+              <Link href="/" className={styles.uploadBtn}>
+                Upload Your Dance Video
+              </Link>
+            </>
+          ) : (
+            <>
+              <h3>No recent entries</h3>
+              <p>No entries found for the selected time filter.</p>
+              <button 
+                onClick={() => setFilter("all")} 
+                className={styles.clearFilter}
+              >
+                Show All Entries
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className={styles.grid}>
