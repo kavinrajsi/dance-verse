@@ -147,7 +147,7 @@ export default function EntriesPage() {
           {searchTerm ? (
             <>
               <h3>No entries found</h3>
-              <p>No entries match "{searchTerm}"</p>
+              <p>No entries match &ldquo;{searchTerm}&rdquo;</p>
               <button 
                 onClick={() => setSearchTerm("")} 
                 className={styles.clearSearch}
