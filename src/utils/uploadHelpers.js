@@ -38,25 +38,49 @@ export function extFromMime(type) {
   return EXTENSION_MAP[type] || "mp4";
 }
 
-export function normalizeSupabaseUrl(url) {
+const allowHttpFromEnv =
+  typeof process !== "undefined" &&
+  process.env.NEXT_PUBLIC_SUPABASE_ALLOW_HTTP === "true";
+
+export function normalizeSupabaseUrl(url, options = {}) {
   if (!url) return null;
 
   const trimmed = String(url).trim();
   if (!trimmed) return null;
 
+  const isLikelyLocalUrl = /^http:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i.test(trimmed) ||
+    /^http:\/\/(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01]))/i.test(trimmed);
+
+  const allowHttp =
+    (typeof window !== "undefined" && window.location?.protocol === "http:") ||
+    options.allowHttp === true ||
+    (options.allowHttp === undefined && allowHttpFromEnv) ||
+    isLikelyLocalUrl;
+
   try {
     const parsed = new URL(trimmed);
-    if (parsed.protocol === "http:") {
+    if (parsed.protocol === "http:" && !allowHttp) {
       parsed.protocol = "https:";
       if (parsed.port === "80") {
         parsed.port = "";
       }
     }
     if (!parsed.protocol || parsed.protocol === ":") {
+      if (allowHttp && typeof window !== "undefined" && window.location?.protocol) {
+        parsed.protocol = window.location.protocol;
+      } else {
+        parsed.protocol = "https:";
+      }
+    }
+    if (!allowHttp && parsed.protocol === "http:") {
       parsed.protocol = "https:";
     }
     return parsed.toString().replace(/\/+$/, "");
   } catch (error) {
+    if (allowHttp) {
+      return trimmed.replace(/\/+$/, "");
+    }
+
     const coerced = trimmed.replace(/^http:/i, "https:");
     return coerced.replace(/\/+$/, "");
   }
