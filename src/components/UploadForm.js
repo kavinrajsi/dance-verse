@@ -8,6 +8,7 @@ import {
   formatFileSize,
   MAX_UPLOAD_SIZE_BYTES,
   MAX_UPLOAD_SIZE_LABEL,
+  normalizeSupabaseUrl,
 } from "@/utils/uploadHelpers";
 import styles from "./UploadForm.module.scss";
 
@@ -109,7 +110,7 @@ export default function UploadForm({ onClose }) {
   };
 
   const uploadDirectlyToSupabase = async (videoFile, filename) => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseUrl = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {

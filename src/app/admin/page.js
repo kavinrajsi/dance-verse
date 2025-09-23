@@ -1,7 +1,7 @@
 // src/app/admin/page.js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import styles from "./admin.module.scss";
 
 export default function AdminDashboard() {
@@ -13,23 +13,56 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
+  const fetchSubmissions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const key = apiKey || localStorage.getItem("admin_api_key");
+
+      const response = await fetch(
+        `/api/admin/submissions?filter=${filter}&search=${encodeURIComponent(searchTerm)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${key}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch submissions");
+      }
+
+      setSubmissions(data.submissions || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+      if (err.message === "Unauthorized") {
+        setAuthenticated(false);
+        localStorage.removeItem("admin_api_key");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [apiKey, filter, searchTerm]);
+
   const authenticate = () => {
     if (apiKey.trim()) {
-      localStorage.setItem('admin_api_key', apiKey);
+      localStorage.setItem("admin_api_key", apiKey);
       setAuthenticated(true);
       fetchSubmissions();
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('admin_api_key');
+    localStorage.removeItem("admin_api_key");
     setAuthenticated(false);
     setApiKey("");
     setSubmissions([]);
   };
 
   useEffect(() => {
-    const savedKey = localStorage.getItem('admin_api_key');
+    const savedKey = localStorage.getItem("admin_api_key");
     if (savedKey) {
       setApiKey(savedKey);
       setAuthenticated(true);
@@ -37,37 +70,7 @@ export default function AdminDashboard() {
     } else {
       setLoading(false);
     }
-  }, []);
-
-  const fetchSubmissions = async () => {
-    try {
-      setLoading(true);
-      const key = apiKey || localStorage.getItem('admin_api_key');
-      
-      const response = await fetch(`/api/admin/submissions?filter=${filter}&search=${searchTerm}`, {
-        headers: {
-          'Authorization': `Bearer ${key}`
-        }
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch submissions");
-      }
-      
-      setSubmissions(data.submissions || []);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-      if (err.message === "Unauthorized") {
-        setAuthenticated(false);
-        localStorage.removeItem('admin_api_key');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchSubmissions]);
 
   const deleteSubmission = async (id, name) => {
     if (!confirm(`Are you sure you want to delete the submission by ${name}?`)) {

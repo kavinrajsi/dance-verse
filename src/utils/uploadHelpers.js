@@ -38,6 +38,30 @@ export function extFromMime(type) {
   return EXTENSION_MAP[type] || "mp4";
 }
 
+export function normalizeSupabaseUrl(url) {
+  if (!url) return null;
+
+  const trimmed = String(url).trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:") {
+      parsed.protocol = "https:";
+      if (parsed.port === "80") {
+        parsed.port = "";
+      }
+    }
+    if (!parsed.protocol || parsed.protocol === ":") {
+      parsed.protocol = "https:";
+    }
+    return parsed.toString().replace(/\/+$/, "");
+  } catch (error) {
+    const coerced = trimmed.replace(/^http:/i, "https:");
+    return coerced.replace(/\/+$/, "");
+  }
+}
+
 export function buildSupabaseFilename({ name, email }, file) {
   const originalName = file?.name || "video";
   const originalExt = originalName.includes(".")
