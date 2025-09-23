@@ -8,6 +8,7 @@ const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
+  preload: true,
 });
 
 const gamePaused = localFont({
@@ -25,6 +26,7 @@ const gamePaused = localFont({
   ],
   variable: "--font-gamepaused",
   display: "swap",
+  preload: true,
 });
 
 
@@ -36,6 +38,16 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${gamePaused.variable}`}>
+      <head>
+        {/* Preload critical fonts manually with correct as attribute */}
+        <link
+          rel="preload"
+          href="/fonts/GamePausedDEMO.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body >
         <Header />
         {children}
