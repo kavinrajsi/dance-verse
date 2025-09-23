@@ -1,3 +1,4 @@
+// src/components/UploadForm.js - Direct VPS Upload with Progress
 "use client";
 
 import { useRef, useState, useEffect } from "react";
@@ -8,8 +9,10 @@ export default function UploadForm({ onClose }) {
   const [file, setFile] = useState(null);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [resultUrl, setResultUrl] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadSpeed, setUploadSpeed] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState(0);
 
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -17,11 +20,19 @@ export default function UploadForm({ onClose }) {
     email: "",
     phone: "",
     title: "",
-    form: "", // General form error
+    form: "",
   });
 
-  // Reference to ongoing upload
   const uploadPromiseRef = useRef(null);
+  const startTimeRef = useRef(null);
+
+  // Back to larger file size since we're bypassing Vercel
+  const MAX_FILE_SIZE = 45 * 1024 * 1024; // 45MB
+  const MAX_FILE_SIZE_DISPLAY = "45MB";
+
+  // VPS configuration
+  const VPS_UPLOAD_URL = process.env.NEXT_PUBLIC_VPS_UPLOAD_URL || "http://168.231.122.251:3001/upload";
+  const VPS_API_KEY = process.env.NEXT_PUBLIC_VPS_API_KEY;
 
   // Auto-close when upload is successful
   useEffect(() => {
@@ -29,13 +40,9 @@ export default function UploadForm({ onClose }) {
       const timer = setTimeout(() => {
         onClose();
       }, 3000);
-
       return () => clearTimeout(timer);
     }
   }, [uploadSuccess, onClose]);
-
-  // File size limit (45MB)
-  const MAX_FILE_SIZE = 45 * 1024 * 1024; // 45MB in bytes
 
   // Format file size for display
   const formatFileSize = (bytes) => {
@@ -46,10 +53,26 @@ export default function UploadForm({ onClose }) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
+  // Format upload speed
+  const formatSpeed = (bytesPerSecond) => {
+    if (bytesPerSecond === 0) return "0 B/s";
+    const k = 1024;
+    const sizes = ["B/s", "KB/s", "MB/s", "GB/s"];
+    const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
+    return parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  // Format time
+  const formatTime = (seconds) => {
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.round(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+  };
+
   // Validate individual field
   const validateField = (name, value) => {
     let error = "";
-
     switch (name) {
       case "name":
         if (!value.trim()) {
@@ -58,7 +81,6 @@ export default function UploadForm({ onClose }) {
           error = "Name must be at least 2 characters";
         }
         break;
-
       case "email":
         if (!value.trim()) {
           error = "Email is required";
@@ -66,7 +88,6 @@ export default function UploadForm({ onClose }) {
           error = "Please enter a valid email address";
         }
         break;
-
       case "phone":
         if (!value.trim()) {
           error = "Mobile number is required";
@@ -74,7 +95,6 @@ export default function UploadForm({ onClose }) {
           error = "Please enter a valid mobile number";
         }
         break;
-
       case "title":
         if (!value.trim()) {
           error = "Video title is required";
@@ -82,11 +102,9 @@ export default function UploadForm({ onClose }) {
           error = "Title must be at least 3 characters";
         }
         break;
-
       default:
         break;
     }
-
     return error;
   };
 
@@ -94,7 +112,6 @@ export default function UploadForm({ onClose }) {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     const error = validateField(name, value);
-
     setErrors((prev) => ({
       ...prev,
       [name]: error,
@@ -105,15 +122,11 @@ export default function UploadForm({ onClose }) {
   const validateForm = (formData) => {
     const newErrors = {};
     const fields = ["name", "email", "phone", "title"];
-
     fields.forEach((field) => {
       const value = formData.get(field) || "";
       newErrors[field] = validateField(field, value);
     });
-
     setErrors(newErrors);
-
-    // Return true if no errors
     return Object.values(newErrors).every((error) => error === "");
   };
 
@@ -123,23 +136,113 @@ export default function UploadForm({ onClose }) {
     handleFile(e.dataTransfer.files?.[0]);
   };
 
+  // Direct upload to VPS with detailed progress tracking
+  const uploadDirectToVPS = async (formData) => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      startTimeRef.current = Date.now();
+      
+      // Track upload progress with speed calculation
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(progress);
+
+          // Calculate upload speed and estimated time
+          const elapsedTime = (Date.now() - startTimeRef.current) / 1000; // seconds
+          const uploadedBytes = e.loaded;
+          const speed = uploadedBytes / elapsedTime; // bytes per second
+          const remainingBytes = e.total - e.loaded;
+          const estimatedSeconds = remainingBytes / speed;
+
+          setUploadSpeed(speed);
+          setEstimatedTime(estimatedSeconds);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (e) {
+            reject(new Error('Invalid response from server'));
+          }
+        } else {
+          let errorMessage = `Upload failed: ${xhr.status} ${xhr.statusText}`;
+          try {
+            const errorResponse = JSON.parse(xhr.responseText);
+            errorMessage = errorResponse.error || errorMessage;
+          } catch (e) {
+            // Use default error message
+          }
+          reject(new Error(errorMessage));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload. Please check your connection.'));
+      });
+
+      xhr.addEventListener('timeout', () => {
+        reject(new Error('Upload timed out. Please try again.'));
+      });
+
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload was cancelled.'));
+      });
+
+      // Configure request
+      xhr.open('POST', VPS_UPLOAD_URL);
+      xhr.timeout = 300000; // 5 minutes timeout
+      
+      // Add API key if available
+      if (VPS_API_KEY) {
+        xhr.setRequestHeader('Authorization', `Bearer ${VPS_API_KEY}`);
+      }
+
+      xhr.send(formData);
+    });
+  };
+
+  // Save submission metadata to your database
+  const saveSubmissionMetadata = async (submissionData) => {
+    try {
+      const response = await fetch('/api/save-submission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submissionData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save submission metadata');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving metadata:', error);
+      // Don't fail the whole upload if metadata save fails
+      return null;
+    }
+  };
+
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formEl = e.currentTarget;
-    const fd = new FormData(formEl);
+    const formData = new FormData(formEl);
 
-    // Clear previous form error
     setErrors((prev) => ({ ...prev, form: "" }));
 
-    // Validate form
-    const isFormValid = validateForm(fd);
+    const isFormValid = validateForm(formData);
 
     if (!file || error) {
       setErrors((prev) => ({
         ...prev,
-        form: "Please upload a valid video (≤ 1 min, ≤ 45MB)",
+        form: `Please upload a valid video (≤ 1 min, ≤ ${MAX_FILE_SIZE_DISPLAY})`,
       }));
       return;
     }
@@ -152,74 +255,85 @@ export default function UploadForm({ onClose }) {
       return;
     }
 
-    fd.set("file", file);
+    // Create VPS upload form data
+    const vpsFormData = new FormData();
+    vpsFormData.append('file', file);
+    
+    // Add API key if available
+    if (VPS_API_KEY) {
+      vpsFormData.append('api_key', VPS_API_KEY);
+    }
 
     setUploading(true);
-    setResultUrl(null);
+    setUploadProgress(0);
+    setUploadSpeed(0);
+    setEstimatedTime(0);
 
-    // Create upload promise and store reference
-    const uploadPromise = fetch("/api/upload", { method: "POST", body: fd })
-      .then(async (res) => {
-        // Handle non-JSON responses (like 413 errors)
-        const contentType = res.headers.get("content-type");
+    const uploadPromise = uploadDirectToVPS(vpsFormData)
+      .then(async (vpsResponse) => {
+        console.log('VPS upload successful:', vpsResponse);
 
-        if (!contentType || !contentType.includes("application/json")) {
-          // Server returned HTML or plain text (likely an error page)
-          if (res.status === 413) {
-            throw new Error("File too large. Maximum file size is 45MB.");
-          }
-          throw new Error(`Server error (${res.status}). Please try again.`);
-        }
+        // VPS upload successful, now save metadata
+        const submissionData = {
+          name: formData.get('name').trim(),
+          email: formData.get('email').trim(),
+          phone: formData.get('phone').trim(),
+          title: formData.get('title').trim(),
+          filename: vpsResponse.filename || file.name,
+          blob_url: vpsResponse.url,
+          download_url: vpsResponse.downloadUrl,
+          file_size: file.size,
+          file_type: file.type,
+          storage_location: "vps",
+          vps_file_id: vpsResponse.fileId || vpsResponse.filename,
+        };
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || `Upload failed (${res.status})`);
-        }
-        return data;
-      })
-      .then((data) => {
-        setResultUrl(data.url);
+        // Save to database (best effort)
+        const metadataResult = await saveSubmissionMetadata(submissionData);
+        console.log('Metadata saved:', metadataResult);
+
         setUploadSuccess(true);
 
-        // Show browser notification if possible
+        // Show notification
         if ("Notification" in window && Notification.permission === "granted") {
           new Notification("DanceVerse Upload Complete!", {
             body: "Your dance video has been uploaded successfully!",
-            icon: "/logo.svg", // You can use your logo here
+            icon: "/logo.svg",
           });
         }
 
-        return data;
+        return vpsResponse;
       })
       .catch((err) => {
-        // Only show error if modal is still open
+        console.error("Upload error:", err);
         if (!uploadSuccess) {
           setErrors((prev) => ({
             ...prev,
             form: err.message || "Upload failed. Please try again.",
           }));
         }
-        console.error("Upload error:", err);
         throw err;
       })
       .finally(() => {
         setUploading(false);
+        setUploadProgress(0);
+        setUploadSpeed(0);
+        setEstimatedTime(0);
         uploadPromiseRef.current = null;
       });
 
-    // Store the promise reference
     uploadPromiseRef.current = uploadPromise;
   };
 
   // Handle modal close
   const handleClose = () => {
     if (uploading && uploadPromiseRef.current) {
-      // Request notification permission if not already granted
+      // Request notification permission
       if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
       }
 
-      // Show a brief message that upload continues
+      // Show background upload notification
       const notification = document.createElement("div");
       notification.style.cssText = `
         position: fixed;
@@ -237,41 +351,35 @@ export default function UploadForm({ onClose }) {
       notification.textContent = "Upload continuing in background...";
       document.body.appendChild(notification);
 
-      // Remove notification after 3 seconds
       setTimeout(() => {
         if (document.body.contains(notification)) {
           document.body.removeChild(notification);
         }
       }, 3000);
 
-      // Upload will continue in background
+      // Handle background upload completion
       uploadPromiseRef.current
         .then((data) => {
-          // Show success notification
-          if (
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
+          if ("Notification" in window && Notification.permission === "granted") {
             new Notification("DanceVerse Upload Complete!", {
               body: "Your dance video has been uploaded successfully!",
               icon: "/logo.svg",
             });
           } else {
-            // Fallback: show another temporary notification
             const successNotification = document.createElement("div");
             successNotification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #4CAF50;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 10000;
-            font-family: system-ui, sans-serif;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          `;
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: #4CAF50;
+              color: white;
+              padding: 12px 20px;
+              border-radius: 8px;
+              z-index: 10000;
+              font-family: system-ui, sans-serif;
+              font-weight: 600;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
             successNotification.textContent = "✅ Video uploaded successfully!";
             document.body.appendChild(successNotification);
 
@@ -283,21 +391,20 @@ export default function UploadForm({ onClose }) {
           }
         })
         .catch((err) => {
-          // Show error notification
           const errorNotification = document.createElement("div");
           errorNotification.style.cssText = `
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #f44336;
-          color: white;
-          padding: 12px 20px;
-          border-radius: 8px;
-          z-index: 10000;
-          font-family: system-ui, sans-serif;
-          font-weight: 600;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-family: system-ui, sans-serif;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          `;
           errorNotification.textContent = "❌ Upload failed: " + err.message;
           document.body.appendChild(errorNotification);
 
@@ -309,7 +416,6 @@ export default function UploadForm({ onClose }) {
         });
     }
 
-    // Close the modal
     onClose();
   };
 
@@ -317,13 +423,11 @@ export default function UploadForm({ onClose }) {
   const handleFile = (f) => {
     if (!f) return;
 
-    // 🔍 DEBUG: Log file details
     console.log("📄 File details:", {
       name: f.name,
       size: f.size,
       sizeFormatted: formatFileSize(f.size),
       type: f.type,
-      lastModified: new Date(f.lastModified).toISOString(),
     });
 
     if (!f.type.startsWith("video/")) {
@@ -332,15 +436,8 @@ export default function UploadForm({ onClose }) {
       return;
     }
 
-    // Check file size
     if (f.size > MAX_FILE_SIZE) {
-      console.log("❌ File too large:", {
-        fileSize: f.size,
-        maxSize: MAX_FILE_SIZE,
-        fileSizeFormatted: formatFileSize(f.size),
-        maxSizeFormatted: formatFileSize(MAX_FILE_SIZE),
-      });
-      setError(`File size (${formatFileSize(f.size)}) exceeds the 45MB limit.`);
+      setError(`File size (${formatFileSize(f.size)}) exceeds the ${MAX_FILE_SIZE_DISPLAY} limit.`);
       setFile(null);
       return;
     }
@@ -350,23 +447,18 @@ export default function UploadForm({ onClose }) {
     video.preload = "metadata";
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(url);
-      console.log("🎥 Video metadata:", {
-        duration: video.duration,
-        videoWidth: video.videoWidth,
-        videoHeight: video.videoHeight,
-      });
 
       if (video.duration > 60) {
         setError("Video must be 1 minute or less.");
         setFile(null);
       } else {
-        console.log("✅ File validation passed");
         setError(null);
         setFile(f);
       }
     };
     video.src = url;
   };
+
 
   return (
     <div className={styles.backdrop} role="dialog" aria-modal="true">
