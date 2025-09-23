@@ -34,8 +34,8 @@ export default function UploadForm({ onClose }) {
     }
   }, [uploadSuccess, onClose]);
 
-  // File size limit (50MB)
-  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+  // File size limit (45MB)
+  const MAX_FILE_SIZE = 45 * 1024 * 1024; // 45MB in bytes
 
   // Format file size for display
   const formatFileSize = (bytes) => {
@@ -117,7 +117,6 @@ export default function UploadForm({ onClose }) {
     return Object.values(newErrors).every((error) => error === "");
   };
 
-
   // Drag and drop
   const onDrop = (e) => {
     e.preventDefault();
@@ -140,7 +139,7 @@ export default function UploadForm({ onClose }) {
     if (!file || error) {
       setErrors((prev) => ({
         ...prev,
-        form: "Please upload a valid video (≤ 1 min, ≤ 50MB)",
+        form: "Please upload a valid video (≤ 1 min, ≤ 45MB)",
       }));
       return;
     }
@@ -162,16 +161,16 @@ export default function UploadForm({ onClose }) {
     const uploadPromise = fetch("/api/upload", { method: "POST", body: fd })
       .then(async (res) => {
         // Handle non-JSON responses (like 413 errors)
-        const contentType = res.headers.get('content-type');
-        
-        if (!contentType || !contentType.includes('application/json')) {
+        const contentType = res.headers.get("content-type");
+
+        if (!contentType || !contentType.includes("application/json")) {
           // Server returned HTML or plain text (likely an error page)
           if (res.status === 413) {
-            throw new Error("File too large. Maximum file size is 50MB.");
+            throw new Error("File too large. Maximum file size is 45MB.");
           }
           throw new Error(`Server error (${res.status}). Please try again.`);
         }
-        
+
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data.error || `Upload failed (${res.status})`);
@@ -314,62 +313,60 @@ export default function UploadForm({ onClose }) {
     onClose();
   };
 
-
   // Validate & set file
-const handleFile = (f) => {
-  if (!f) return;
+  const handleFile = (f) => {
+    if (!f) return;
 
-  // 🔍 DEBUG: Log file details
-  console.log("📄 File details:", {
-    name: f.name,
-    size: f.size,
-    sizeFormatted: formatFileSize(f.size),
-    type: f.type,
-    lastModified: new Date(f.lastModified).toISOString()
-  });
-
-  if (!f.type.startsWith("video/")) {
-    setError("Only video files are allowed.");
-    setFile(null);
-    return;
-  }
-
-  // Check file size
-  if (f.size > MAX_FILE_SIZE) {
-    console.log("❌ File too large:", {
-      fileSize: f.size,
-      maxSize: MAX_FILE_SIZE,
-      fileSizeFormatted: formatFileSize(f.size),
-      maxSizeFormatted: formatFileSize(MAX_FILE_SIZE)
+    // 🔍 DEBUG: Log file details
+    console.log("📄 File details:", {
+      name: f.name,
+      size: f.size,
+      sizeFormatted: formatFileSize(f.size),
+      type: f.type,
+      lastModified: new Date(f.lastModified).toISOString(),
     });
-    setError(`File size (${formatFileSize(f.size)}) exceeds the 50MB limit.`);
-    setFile(null);
-    return;
-  }
 
-  const url = URL.createObjectURL(f);
-  const video = document.createElement("video");
-  video.preload = "metadata";
-  video.onloadedmetadata = () => {
-    URL.revokeObjectURL(url);
-    console.log("🎥 Video metadata:", {
-      duration: video.duration,
-      videoWidth: video.videoWidth,
-      videoHeight: video.videoHeight
-    });
-    
-    if (video.duration > 60) {
-      setError("Video must be 1 minute or less.");
+    if (!f.type.startsWith("video/")) {
+      setError("Only video files are allowed.");
       setFile(null);
-    } else {
-      console.log("✅ File validation passed");
-      setError(null);
-      setFile(f);
+      return;
     }
-  };
-  video.src = url;
-};
 
+    // Check file size
+    if (f.size > MAX_FILE_SIZE) {
+      console.log("❌ File too large:", {
+        fileSize: f.size,
+        maxSize: MAX_FILE_SIZE,
+        fileSizeFormatted: formatFileSize(f.size),
+        maxSizeFormatted: formatFileSize(MAX_FILE_SIZE),
+      });
+      setError(`File size (${formatFileSize(f.size)}) exceeds the 45MB limit.`);
+      setFile(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(f);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      console.log("🎥 Video metadata:", {
+        duration: video.duration,
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight,
+      });
+
+      if (video.duration > 60) {
+        setError("Video must be 1 minute or less.");
+        setFile(null);
+      } else {
+        console.log("✅ File validation passed");
+        setError(null);
+        setFile(f);
+      }
+    };
+    video.src = url;
+  };
 
   return (
     <div className={styles.backdrop} role="dialog" aria-modal="true">
@@ -475,7 +472,7 @@ const handleFile = (f) => {
                   </div>
                   <p>Drag &amp; drop your edited video here</p>
                   <p className={styles.requirements}>
-                    Max file size: <strong>50MB</strong> | Max duration:{" "}
+                    Max file size: <strong>45MB</strong> | Max duration:{" "}
                     <strong>1 minute</strong>
                   </p>
 
