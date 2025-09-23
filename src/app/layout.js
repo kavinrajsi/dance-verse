@@ -42,7 +42,7 @@ export default function RootLayout({ children }) {
         {/* Preload critical fonts manually with correct as attribute */}
         <link
           rel="preload"
-          href="/fonts/GamePausedDEMO.woff2"
+          href="../fonts/GamePausedDEMO.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"
