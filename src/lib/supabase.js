@@ -1,7 +1,8 @@
 // src/lib/supabase.js
 import { createClient } from '@supabase/supabase-js'
+import { normalizeSupabaseUrl } from '@/utils/uploadHelpers'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseUrl = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL)
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseKey) {
