@@ -1,4 +1,4 @@
-// src/lib/supabase.js (Simplified for upload-only)
+// src/lib/supabase.js
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -12,7 +12,70 @@ export const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null
 
-// Simple function to save submission data
+// Storage bucket name
+export const STORAGE_BUCKET = 'dance-verse'
+
+// Upload file to Supabase Storage
+export async function uploadToSupabaseStorage(file, filename) {
+  if (!supabase) {
+    throw new Error('Supabase not configured')
+  }
+
+  try {
+    console.log(`Uploading ${filename} to Supabase Storage...`)
+    
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filename, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Storage upload error:', error)
+      throw error
+    }
+
+    // Get the public URL
+    const { data: urlData } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filename)
+
+    return {
+      path: data.path,
+      fullPath: data.fullPath,
+      url: urlData.publicUrl
+    }
+  } catch (error) {
+    console.error('Error uploading to Supabase Storage:', error)
+    throw error
+  }
+}
+
+// Delete file from Supabase Storage
+export async function deleteFromSupabaseStorage(filename) {
+  if (!supabase) {
+    throw new Error('Supabase not configured')
+  }
+
+  try {
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .remove([filename])
+
+    if (error) {
+      console.error('Storage delete error:', error)
+      throw error
+    }
+
+    return true
+  } catch (error) {
+    console.error('Error deleting from Supabase Storage:', error)
+    throw error
+  }
+}
+
+// Save submission data to database
 export async function saveSubmission(submissionData) {
   if (!supabase) {
     console.warn('Supabase not configured - data not saved to database')
@@ -22,7 +85,10 @@ export async function saveSubmission(submissionData) {
   try {
     const { data, error } = await supabase
       .from('dance_submissions')
-      .insert([submissionData])
+      .insert([{
+        ...submissionData,
+        storage_location: 'supabase'
+      }])
       .select()
       .single()
     
@@ -39,7 +105,7 @@ export async function saveSubmission(submissionData) {
   }
 }
 
-// Admin functions (for admin dashboard)
+// Admin functions
 export const danceSubmissions = {
   // Get all submissions with pagination and filters
   async getAll({ 
@@ -92,22 +158,51 @@ export const danceSubmissions = {
     }
   },
 
-  // Delete submission (admin only)
+  // Delete submission and associated file
   async delete(id) {
     if (!supabase) {
       throw new Error('Supabase not configured')
     }
 
-    const { error } = await supabase
-      .from('dance_submissions')
-      .delete()
-      .eq('id', id)
+    try {
+      // First, get the submission to find the filename
+      const { data: submission, error: fetchError } = await supabase
+        .from('dance_submissions')
+        .select('filename')
+        .eq('id', id)
+        .single()
 
-    if (error) {
-      console.error('Error deleting submission:', error)
+      if (fetchError) {
+        console.error('Error fetching submission for deletion:', fetchError)
+        throw fetchError
+      }
+
+      // Delete from storage if filename exists
+      if (submission?.filename) {
+        try {
+          await deleteFromSupabaseStorage(submission.filename)
+          console.log('File deleted from storage:', submission.filename)
+        } catch (storageError) {
+          console.warn('Could not delete file from storage:', storageError.message)
+          // Continue with database deletion even if storage deletion fails
+        }
+      }
+
+      // Delete from database
+      const { error: deleteError } = await supabase
+        .from('dance_submissions')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) {
+        console.error('Error deleting submission from database:', deleteError)
+        throw deleteError
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error in delete operation:', error)
       throw error
     }
-
-    return true
   }
 }
