@@ -449,7 +449,7 @@ export default function UploadForm({ onClose }) {
                   </div>
                   <div className={styles.progressStats}>
                     <span>{Math.round(uploadProgress)}% complete</span>
-                    <span>Uploading directly to Vercel Blob...</span>
+                    {/* <span>Uploading directly to Vercel Blob...</span> */}
                   </div>
                 </div>
               )}
