@@ -1,20 +1,14 @@
-// app/api/upload/route.js
+// src/app/api/upload/route.js
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 import { saveSubmission } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge"; // Use edge runtime for better performance
+export const runtime = "nodejs"; // ✅ CHANGED: from "edge" to "nodejs"
 
 // Configure max duration and size
 export const maxDuration = 60; // 60 seconds
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-}
+
+// ✅ REMOVED: config object (not needed with new approach)
 
 const sanitize = (s) =>
   String(s || "")
@@ -30,6 +24,41 @@ function formatFileSize(bytes) {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// ✅ NEW: Upload file to VPS function
+async function uploadToVPS(fileBuffer, filename, contentType) {
+  const VPS_UPLOAD_URL = process.env.VPS_UPLOAD_URL || 'http://168.231.122.251:3001/upload';
+  const VPS_API_KEY = process.env.VPS_API_KEY;
+
+  try {
+    const formData = new FormData();
+    const blob = new Blob([fileBuffer], { type: contentType });
+    formData.append('file', blob, filename);
+    
+    if (VPS_API_KEY) {
+      formData.append('api_key', VPS_API_KEY);
+    }
+
+    const response = await fetch(VPS_UPLOAD_URL, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': VPS_API_KEY ? `Bearer ${VPS_API_KEY}` : undefined,
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`VPS upload failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('VPS Upload Error:', error);
+    throw new Error(`Failed to upload to VPS: ${error.message}`);
+  }
 }
 
 export async function POST(req) {
@@ -80,23 +109,30 @@ export async function POST(req) {
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
     const finalName = `${sanitize(name)}-${sanitize(email)}-${ts}.${ext}`;
 
-    // Upload to Vercel Blob
-    const blob = await put(finalName, file, {
-      access: 'public',
-      contentType: file.type,
-    });
+    // ✅ NEW: Convert file to buffer for VPS upload
+    const fileBuffer = await file.arrayBuffer();
 
-    // Prepare submission data
+    // ✅ CHANGED: Upload to VPS instead of Vercel Blob
+    const vpsResult = await uploadToVPS(fileBuffer, finalName, file.type);
+
+    // ✅ NEW: Construct URLs based on VPS response
+    const baseUrl = process.env.VPS_BASE_URL || 'http://168.231.122.251:3001';
+    const videoUrl = vpsResult.url || `${baseUrl}/videos/${finalName}`;
+    const downloadUrl = vpsResult.downloadUrl || `${baseUrl}/download/${finalName}`;
+
+    // ✅ CHANGED: Prepare submission data with VPS URLs
     const submissionData = {
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
       title: title.trim(),
       filename: finalName,
-      blob_url: blob.url,
-      download_url: blob.downloadUrl,
+      blob_url: videoUrl, // ✅ CHANGED: Now points to VPS
+      download_url: downloadUrl, // ✅ CHANGED: Now points to VPS
       file_size: file.size,
-      file_type: file.type
+      file_type: file.type,
+      storage_location: 'vps', // ✅ NEW: Track storage location
+      vps_file_id: vpsResult.fileId || finalName // ✅ NEW: Store VPS file ID
     };
 
     // Try to save to database (optional - won't fail if DB is not configured)
@@ -106,8 +142,8 @@ export async function POST(req) {
       return NextResponse.json({ 
         ok: true, 
         filename: finalName, 
-        url: blob.url,
-        downloadUrl: blob.downloadUrl,
+        url: videoUrl, // ✅ CHANGED: VPS URL
+        downloadUrl: downloadUrl, // ✅ CHANGED: VPS URL
         submissionId: savedSubmission?.id,
         message: "Video uploaded and saved successfully!" 
       });
@@ -119,8 +155,8 @@ export async function POST(req) {
       return NextResponse.json({ 
         ok: true, 
         filename: finalName, 
-        url: blob.url,
-        downloadUrl: blob.downloadUrl,
+        url: videoUrl, // ✅ CHANGED: VPS URL
+        downloadUrl: downloadUrl, // ✅ CHANGED: VPS URL
         message: "Video uploaded successfully!" 
       });
     }
