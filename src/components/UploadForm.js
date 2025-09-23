@@ -2,6 +2,13 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
+import {
+  buildSupabaseFilename,
+  formatFileSize,
+  MAX_UPLOAD_SIZE_BYTES,
+  MAX_UPLOAD_SIZE_LABEL,
+} from "@/utils/uploadHelpers";
 import styles from "./UploadForm.module.scss";
 
 export default function UploadForm({ onClose }) {
@@ -26,10 +33,6 @@ export default function UploadForm({ onClose }) {
   const uploadPromiseRef = useRef(null);
   const startTimeRef = useRef(null);
 
-  // Max file size (45MB)
-  const MAX_FILE_SIZE = 45 * 1024 * 1024;
-  const MAX_FILE_SIZE_DISPLAY = "45MB";
-
   // Auto-close when upload is successful
   useEffect(() => {
     if (uploadSuccess) {
@@ -41,14 +44,6 @@ export default function UploadForm({ onClose }) {
   }, [uploadSuccess, onClose]);
 
   // Formatters
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
   const formatSpeed = (bytesPerSecond) => {
     if (bytesPerSecond === 0) return "0 B/s";
     const k = 1024;
@@ -113,53 +108,78 @@ export default function UploadForm({ onClose }) {
     handleFile(e.dataTransfer.files?.[0]);
   };
 
-  // Direct upload to Next API (/api/upload => Supabase)
-  const uploadToAppRoute = async (formData) => {
+  const uploadDirectlyToSupabase = async (videoFile, filename) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error(
+        "Supabase environment variables are not configured. Please contact the site administrator."
+      );
+    }
+
     return new Promise((resolve, reject) => {
+      const cleanedFilename = filename.replace(/^\/+/, "");
+      const encodedBucket = encodeURIComponent(STORAGE_BUCKET);
+      const encodedPath = cleanedFilename
+        .split("/")
+        .map((segment) => encodeURIComponent(segment))
+        .join("/");
+
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/${encodedBucket}/${encodedPath}`;
+
       const xhr = new XMLHttpRequest();
       startTimeRef.current = Date.now();
 
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100);
-          setUploadProgress(progress);
+      xhr.upload.addEventListener("progress", (event) => {
+        if (!event.lengthComputable) return;
 
-          const elapsedTime = (Date.now() - startTimeRef.current) / 1000;
-          const uploadedBytes = e.loaded;
-          const speed = uploadedBytes / elapsedTime;
-          const remainingBytes = e.total - e.loaded;
-          const estimatedSeconds = remainingBytes / (speed || 1);
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(progress);
 
-          setUploadSpeed(speed);
-          setEstimatedTime(estimatedSeconds);
-        }
+        const elapsedTime = (Date.now() - startTimeRef.current) / 1000;
+        const uploadedBytes = event.loaded;
+        const speed = uploadedBytes / (elapsedTime || 1);
+        const remainingBytes = event.total - event.loaded;
+        const estimatedSeconds = remainingBytes / (speed || 1);
+
+        setUploadSpeed(speed);
+        setEstimatedTime(estimatedSeconds);
       });
 
       xhr.addEventListener("load", () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const response = JSON.parse(xhr.responseText);
-            resolve(response);
-          } catch {
-            reject(new Error("Invalid response from server"));
-          }
+          setUploadProgress(100);
+          resolve({
+            publicUrl: `${supabaseUrl}/storage/v1/object/public/${encodedBucket}/${encodedPath}`,
+          });
         } else {
           let msg = `Upload failed: ${xhr.status} ${xhr.statusText}`;
           try {
-            const errRes = JSON.parse(xhr.responseText);
-            msg = errRes.error || msg;
+            const errRes = JSON.parse(xhr.responseText || xhr.response);
+            msg = errRes.error || errRes.message || msg;
           } catch {}
           reject(new Error(msg));
         }
       });
 
-      xhr.addEventListener("error", () => reject(new Error("Network error during upload. Please check your connection.")));
+      xhr.addEventListener("error", () =>
+        reject(new Error("Network error during upload. Please check your connection."))
+      );
       xhr.addEventListener("timeout", () => reject(new Error("Upload timed out. Please try again.")));
       xhr.addEventListener("abort", () => reject(new Error("Upload was cancelled.")));
 
-      xhr.open("POST", "/api/upload");
+      xhr.open("POST", uploadUrl);
       xhr.timeout = 300000; // 5 mins
-      xhr.send(formData);
+      xhr.setRequestHeader("Authorization", `Bearer ${supabaseKey}`);
+      xhr.setRequestHeader("apikey", supabaseKey);
+      xhr.setRequestHeader("x-upsert", "false");
+
+      const body = new FormData();
+      body.append("cacheControl", "3600");
+      body.append("", videoFile);
+
+      xhr.send(body);
     });
   };
 
@@ -175,7 +195,7 @@ export default function UploadForm({ onClose }) {
     if (!file || error) {
       setErrors((prev) => ({
         ...prev,
-        form: `Please upload a valid video (≤ 1 min, ≤ ${MAX_FILE_SIZE_DISPLAY})`,
+        form: `Please upload a valid video (≤ 1 min, ≤ ${MAX_UPLOAD_SIZE_LABEL})`,
       }));
       return;
     }
@@ -188,22 +208,59 @@ export default function UploadForm({ onClose }) {
       return;
     }
 
-    // Build multipart form for /api/upload (server does Supabase + DB)
-    const apiFormData = new FormData();
-    apiFormData.append("file", file);
-    apiFormData.append("name", formData.get("name").trim());
-    apiFormData.append("email", formData.get("email").trim());
-    apiFormData.append("phone", formData.get("phone").trim());
-    apiFormData.append("title", formData.get("title").trim());
-
     setUploading(true);
     setUploadProgress(0);
     setUploadSpeed(0);
     setEstimatedTime(0);
 
-    const uploadPromise = uploadToAppRoute(apiFormData)
-      .then((res) => {
-        if (!res?.ok) throw new Error(res?.error || "Upload failed");
+    const nameValue = formData.get("name").trim();
+    const emailValue = formData.get("email").trim();
+    const phoneValue = formData.get("phone").trim();
+    const titleValue = formData.get("title").trim();
+    const filename = buildSupabaseFilename({ name: nameValue, email: emailValue }, file);
+
+    const uploadPromise = uploadDirectlyToSupabase(file, filename)
+      .then(async ({ publicUrl }) => {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: nameValue,
+            email: emailValue,
+            phone: phoneValue,
+            title: titleValue,
+            filename,
+            fileSize: file.size,
+            fileType: file.type,
+            publicUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          let message = "Upload failed";
+          try {
+            const errorResponse = await response.json();
+            message = errorResponse.error || message;
+          } catch {}
+
+          if (supabase) {
+            try {
+              await supabase.storage.from(STORAGE_BUCKET).remove([filename]);
+            } catch (cleanupError) {
+              console.warn("Failed to remove orphaned upload:", cleanupError);
+            }
+          }
+
+          throw new Error(message);
+        }
+
+        const json = await response.json();
+        if (!json?.ok) {
+          throw new Error(json?.error || "Upload failed");
+        }
+
         setUploadSuccess(true);
 
         if ("Notification" in window && Notification.permission === "granted") {
@@ -212,7 +269,7 @@ export default function UploadForm({ onClose }) {
             icon: "/logo.svg",
           });
         }
-        return res;
+        return json;
       })
       .catch((err) => {
         console.error("Upload error:", err);
@@ -331,8 +388,8 @@ export default function UploadForm({ onClose }) {
       return;
     }
 
-    if (f.size > MAX_FILE_SIZE) {
-      setError(`File size (${formatFileSize(f.size)}) exceeds the ${MAX_FILE_SIZE_DISPLAY} limit.`);
+    if (f.size > MAX_UPLOAD_SIZE_BYTES) {
+      setError(`File size (${formatFileSize(f.size)}) exceeds the ${MAX_UPLOAD_SIZE_LABEL} limit.`);
       setFile(null);
       return;
     }
@@ -458,8 +515,8 @@ export default function UploadForm({ onClose }) {
                   </div>
                   <p>Drag &amp; drop your edited video here</p>
                   <p className={styles.requirements}>
-                    Max file size: <strong>45MB</strong> | Max duration:{" "}
-                    <strong>1 minute</strong>
+                    Max file size: <strong>{MAX_UPLOAD_SIZE_LABEL}</strong> | Max
+                    duration: <strong>1 minute</strong>
                   </p>
 
                   <label className={styles.primaryBtn}>
