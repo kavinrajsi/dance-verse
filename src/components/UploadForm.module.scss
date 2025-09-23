@@ -4,6 +4,7 @@ $white: #fff;
 $yellow: #f2e600;
 
 .backdrop {
+  overflow-y: scroll;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
@@ -14,12 +15,17 @@ $yellow: #f2e600;
 }
 
 .modal {
-  width: min(980px, 100%);
+  overflow-y: scroll;
   border-radius: 20px;
   background: #7729aa;
-  padding: 40px;
   position: relative;
   color: #fff;
+  padding: 20px;
+  width: 98%;
+  @media (max-width: 900px) {
+  width: min(980px, 100%);
+  padding: 40px;
+  }
 }
 
 .close {
@@ -39,10 +45,14 @@ $yellow: #f2e600;
   font-family: var(--font-gamepaused);
   font-style: normal;
   font-weight: 400;
-  font-size: 48px;
-  line-height: 53px;
   color: #f2eb1f;
   padding-bottom: 8px;
+  font-size: 28px;
+  line-height: normal;
+  @media (max-width: 900px) {
+  font-size: 48px;
+  line-height: 53px;
+  }
 }
 
 .lead {
