@@ -117,38 +117,6 @@ export default function UploadForm({ onClose }) {
     return Object.values(newErrors).every((error) => error === "");
   };
 
-  // Validate & set file
-  const handleFile = (f) => {
-    if (!f) return;
-
-    if (!f.type.startsWith("video/")) {
-      setError("Only video files are allowed.");
-      setFile(null);
-      return;
-    }
-
-    // Check file size
-    if (f.size > MAX_FILE_SIZE) {
-      setError(`File size (${formatFileSize(f.size)}) exceeds the 50MB limit.`);
-      setFile(null);
-      return;
-    }
-
-    const url = URL.createObjectURL(f);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      if (video.duration > 60) {
-        setError("Video must be 1 minute or less.");
-        setFile(null);
-      } else {
-        setError(null);
-        setFile(f);
-      }
-    };
-    video.src = url;
-  };
 
   // Drag and drop
   const onDrop = (e) => {
@@ -345,6 +313,63 @@ export default function UploadForm({ onClose }) {
     // Close the modal
     onClose();
   };
+
+
+  // Validate & set file
+const handleFile = (f) => {
+  if (!f) return;
+
+  // 🔍 DEBUG: Log file details
+  console.log("📄 File details:", {
+    name: f.name,
+    size: f.size,
+    sizeFormatted: formatFileSize(f.size),
+    type: f.type,
+    lastModified: new Date(f.lastModified).toISOString()
+  });
+
+  if (!f.type.startsWith("video/")) {
+    setError("Only video files are allowed.");
+    setFile(null);
+    return;
+  }
+
+  // Check file size
+  if (f.size > MAX_FILE_SIZE) {
+    console.log("❌ File too large:", {
+      fileSize: f.size,
+      maxSize: MAX_FILE_SIZE,
+      fileSizeFormatted: formatFileSize(f.size),
+      maxSizeFormatted: formatFileSize(MAX_FILE_SIZE)
+    });
+    setError(`File size (${formatFileSize(f.size)}) exceeds the 50MB limit.`);
+    setFile(null);
+    return;
+  }
+
+  const url = URL.createObjectURL(f);
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.onloadedmetadata = () => {
+    URL.revokeObjectURL(url);
+    console.log("🎥 Video metadata:", {
+      duration: video.duration,
+      videoWidth: video.videoWidth,
+      videoHeight: video.videoHeight
+    });
+    
+    if (video.duration > 60) {
+      setError("Video must be 1 minute or less.");
+      setFile(null);
+    } else {
+      console.log("✅ File validation passed");
+      setError(null);
+      setFile(f);
+    }
+  };
+  video.src = url;
+};
+
 
   return (
     <div className={styles.backdrop} role="dialog" aria-modal="true">

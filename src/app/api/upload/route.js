@@ -1,14 +1,10 @@
-// src/app/api/upload/route.js
+// src/app/api/upload/route.js - Enhanced with debugging
 import { NextResponse } from "next/server";
 import { saveSubmission } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs"; // ✅ CHANGED: from "edge" to "nodejs"
-
-// Configure max duration and size
-export const maxDuration = 60; // 60 seconds
-
-// ✅ REMOVED: config object (not needed with new approach)
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const sanitize = (s) =>
   String(s || "")
@@ -17,7 +13,6 @@ const sanitize = (s) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-// Helper function to format file size
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -26,10 +21,17 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// ✅ NEW: Upload file to VPS function
 async function uploadToVPS(fileBuffer, filename, contentType) {
   const VPS_UPLOAD_URL = process.env.VPS_UPLOAD_URL || 'http://168.231.122.251:3001/upload';
   const VPS_API_KEY = process.env.VPS_API_KEY;
+
+  console.log("🚀 Starting VPS upload:", {
+    url: VPS_UPLOAD_URL,
+    filename,
+    contentType,
+    bufferSize: fileBuffer.byteLength,
+    bufferSizeFormatted: formatFileSize(fileBuffer.byteLength)
+  });
 
   try {
     const formData = new FormData();
@@ -40,6 +42,8 @@ async function uploadToVPS(fileBuffer, filename, contentType) {
       formData.append('api_key', VPS_API_KEY);
     }
 
+    console.log("📤 Sending to VPS...");
+    
     const response = await fetch(VPS_UPLOAD_URL, {
       method: 'POST',
       body: formData,
@@ -48,31 +52,52 @@ async function uploadToVPS(fileBuffer, filename, contentType) {
       }
     });
 
+    console.log("📥 VPS Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("❌ VPS upload failed:", errorText);
       throw new Error(`VPS upload failed: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log("✅ VPS upload successful:", result);
     return result;
   } catch (error) {
-    console.error('VPS Upload Error:', error);
+    console.error('❌ VPS Upload Error:', error);
     throw new Error(`Failed to upload to VPS: ${error.message}`);
   }
 }
 
 export async function POST(req) {
   try {
-    // Check content length early
+    // 🔍 DEBUG: Log request details
     const contentLength = req.headers.get('content-length');
+    console.log("📝 Request details:", {
+      contentLength,
+      contentLengthFormatted: contentLength ? formatFileSize(parseInt(contentLength)) : 'unknown',
+      headers: Object.fromEntries(req.headers.entries())
+    });
+
     const maxSize = 50 * 1024 * 1024; // 50MB
     
     if (contentLength && parseInt(contentLength) > maxSize) {
+      console.log("❌ Content-Length too large:", {
+        contentLength: parseInt(contentLength),
+        maxSize,
+        contentLengthFormatted: formatFileSize(parseInt(contentLength)),
+        maxSizeFormatted: formatFileSize(maxSize)
+      });
       return NextResponse.json({ 
         error: "File too large. Maximum file size is 50MB." 
       }, { status: 413 });
     }
 
+    console.log("📋 Parsing form data...");
     const formData = await req.formData();
 
     const file = formData.get("file");
@@ -81,16 +106,36 @@ export async function POST(req) {
     const phone = formData.get("phone");
     const title = formData.get("title");
 
+    // 🔍 DEBUG: Log form data
+    console.log("📄 Form data received:", {
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileSizeFormatted: file?.size ? formatFileSize(file.size) : 'unknown',
+      fileType: file?.type,
+      name,
+      email,
+      phone,
+      title
+    });
+
     if (!file || typeof file === "string") {
+      console.log("❌ No file provided");
       return NextResponse.json({ error: "No video provided" }, { status: 400 });
     }
 
     if (!file.type?.startsWith("video/")) {
+      console.log("❌ Invalid file type:", file.type);
       return NextResponse.json({ error: "File must be a video" }, { status: 400 });
     }
 
     // Check file size again after parsing
     if (file.size > maxSize) {
+      console.log("❌ File size exceeds limit:", {
+        fileSize: file.size,
+        maxSize,
+        fileSizeFormatted: formatFileSize(file.size),
+        maxSizeFormatted: formatFileSize(maxSize)
+      });
       return NextResponse.json({ 
         error: `File size (${formatFileSize(file.size)}) exceeds the 50MB limit.` 
       }, { status: 413 });
@@ -98,6 +143,7 @@ export async function POST(req) {
 
     // Validate required fields
     if (!name?.trim() || !email?.trim() || !phone?.trim() || !title?.trim()) {
+      console.log("❌ Missing required fields");
       return NextResponse.json({ 
         error: "All fields (name, email, phone, title) are required" 
       }, { status: 400 });
@@ -109,62 +155,67 @@ export async function POST(req) {
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
     const finalName = `${sanitize(name)}-${sanitize(email)}-${ts}.${ext}`;
 
-    // ✅ NEW: Convert file to buffer for VPS upload
+    console.log("🔄 Converting file to buffer...");
     const fileBuffer = await file.arrayBuffer();
+    
+    console.log("✅ File converted to buffer:", {
+      originalSize: file.size,
+      bufferSize: fileBuffer.byteLength,
+      match: file.size === fileBuffer.byteLength
+    });
 
-    // ✅ CHANGED: Upload to VPS instead of Vercel Blob
+    // Upload to VPS
     const vpsResult = await uploadToVPS(fileBuffer, finalName, file.type);
 
-    // ✅ NEW: Construct URLs based on VPS response
+    // Construct URLs
     const baseUrl = process.env.VPS_BASE_URL || 'http://168.231.122.251:3001';
     const videoUrl = vpsResult.url || `${baseUrl}/videos/${finalName}`;
     const downloadUrl = vpsResult.downloadUrl || `${baseUrl}/download/${finalName}`;
 
-    // ✅ CHANGED: Prepare submission data with VPS URLs
+    // Prepare submission data
     const submissionData = {
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
       title: title.trim(),
       filename: finalName,
-      blob_url: videoUrl, // ✅ CHANGED: Now points to VPS
-      download_url: downloadUrl, // ✅ CHANGED: Now points to VPS
+      blob_url: videoUrl,
+      download_url: downloadUrl,
       file_size: file.size,
       file_type: file.type,
-      storage_location: 'vps', // ✅ NEW: Track storage location
-      vps_file_id: vpsResult.fileId || finalName // ✅ NEW: Store VPS file ID
+      storage_location: 'vps',
+      vps_file_id: vpsResult.fileId || finalName
     };
 
-    // Try to save to database (optional - won't fail if DB is not configured)
+    // Try to save to database
     try {
       const savedSubmission = await saveSubmission(submissionData);
+      console.log("✅ Submission saved to database:", savedSubmission?.id);
       
       return NextResponse.json({ 
         ok: true, 
         filename: finalName, 
-        url: videoUrl, // ✅ CHANGED: VPS URL
-        downloadUrl: downloadUrl, // ✅ CHANGED: VPS URL
+        url: videoUrl,
+        downloadUrl: downloadUrl,
         submissionId: savedSubmission?.id,
         message: "Video uploaded and saved successfully!" 
       });
       
     } catch (dbError) {
-      console.error("Database save error (continuing anyway):", dbError);
+      console.error("⚠️ Database save error (continuing anyway):", dbError);
       
-      // Video was uploaded successfully, database save failed but that's okay
       return NextResponse.json({ 
         ok: true, 
         filename: finalName, 
-        url: videoUrl, // ✅ CHANGED: VPS URL
-        downloadUrl: downloadUrl, // ✅ CHANGED: VPS URL
+        url: videoUrl,
+        downloadUrl: downloadUrl,
         message: "Video uploaded successfully!" 
       });
     }
 
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("❌ Upload error:", err);
     
-    // Handle specific error types
     if (err.name === 'PayloadTooLargeError' || err.message?.includes('413')) {
       return NextResponse.json({ 
         error: "File too large. Maximum file size is 50MB." 
