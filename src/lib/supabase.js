@@ -1,5 +1,6 @@
 // src/lib/supabase.js
 import { createClient } from '@supabase/supabase-js'
+import { put } from '@vercel/blob'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -12,65 +13,51 @@ export const supabase = supabaseUrl && supabaseKey
   ? createClient(supabaseUrl, supabaseKey)
   : null
 
-// Storage bucket name
-export const STORAGE_BUCKET = 'dance-verse'
-
-// Upload file to Supabase Storage
-export async function uploadToSupabaseStorage(file, filename) {
-  if (!supabase) {
-    throw new Error('Supabase not configured')
+// Upload file to Vercel Blob Storage
+export async function uploadToVercelBlob(file, filename) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error('Vercel Blob token not configured')
   }
 
   try {
-    console.log(`Uploading ${filename} to Supabase Storage...`)
+    console.log(`Uploading ${filename} to Vercel Blob Storage...`)
     
-    const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filename, file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+    const blob = await put(filename, file, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
 
-    if (error) {
-      console.error('Storage upload error:', error)
-      throw error
-    }
-
-    // Get the public URL
-    const { data: urlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(filename)
+    console.log('Vercel Blob upload successful:', blob.url)
 
     return {
-      path: data.path,
-      fullPath: data.fullPath,
-      url: urlData.publicUrl
+      path: filename,
+      fullPath: filename,
+      url: blob.url,
+      downloadUrl: blob.downloadUrl || blob.url
     }
   } catch (error) {
-    console.error('Error uploading to Supabase Storage:', error)
+    console.error('Error uploading to Vercel Blob:', error)
     throw error
   }
 }
 
-// Delete file from Supabase Storage
-export async function deleteFromSupabaseStorage(filename) {
-  if (!supabase) {
-    throw new Error('Supabase not configured')
+// Delete file from Vercel Blob Storage
+export async function deleteFromVercelBlob(url) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error('Vercel Blob token not configured')
   }
 
   try {
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .remove([filename])
+    const { del } = await import('@vercel/blob')
+    
+    await del(url, {
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
 
-    if (error) {
-      console.error('Storage delete error:', error)
-      throw error
-    }
-
+    console.log('File deleted from Vercel Blob:', url)
     return true
   } catch (error) {
-    console.error('Error deleting from Supabase Storage:', error)
+    console.error('Error deleting from Vercel Blob:', error)
     throw error
   }
 }
@@ -87,7 +74,7 @@ export async function saveSubmission(submissionData) {
       .from('dance_submissions')
       .insert([{
         ...submissionData,
-        storage_location: 'supabase'
+        storage_location: 'vercel'
       }])
       .select()
       .single()
@@ -165,10 +152,10 @@ export const danceSubmissions = {
     }
 
     try {
-      // First, get the submission to find the filename
+      // First, get the submission to find the blob URL
       const { data: submission, error: fetchError } = await supabase
         .from('dance_submissions')
-        .select('filename')
+        .select('blob_url, storage_location')
         .eq('id', id)
         .single()
 
@@ -177,13 +164,13 @@ export const danceSubmissions = {
         throw fetchError
       }
 
-      // Delete from storage if filename exists
-      if (submission?.filename) {
+      // Delete from storage if blob_url exists and it's stored in Vercel
+      if (submission?.blob_url && submission?.storage_location === 'vercel') {
         try {
-          await deleteFromSupabaseStorage(submission.filename)
-          console.log('File deleted from storage:', submission.filename)
+          await deleteFromVercelBlob(submission.blob_url)
+          console.log('File deleted from Vercel Blob:', submission.blob_url)
         } catch (storageError) {
-          console.warn('Could not delete file from storage:', storageError.message)
+          console.warn('Could not delete file from Vercel Blob:', storageError.message)
           // Continue with database deletion even if storage deletion fails
         }
       }
@@ -205,4 +192,15 @@ export const danceSubmissions = {
       throw error
     }
   }
+}
+
+// Legacy Supabase Storage functions (keep for backward compatibility)
+export async function uploadToSupabaseStorage(file, filename) {
+  console.warn('uploadToSupabaseStorage is deprecated, using Vercel Blob instead')
+  return uploadToVercelBlob(file, filename)
+}
+
+export async function deleteFromSupabaseStorage(filename) {
+  console.warn('deleteFromSupabaseStorage is deprecated')
+  return true
 }
