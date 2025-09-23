@@ -4,14 +4,19 @@ $white: #fff;
 $yellow: #f2e600;
 
 .backdrop {
-  overflow-y: scroll;
+  // overflow-y: scroll;
   position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   display: grid;
   place-items: center;
+  align-items: center;
+  justify-content: center;
   z-index: 1000;
-  padding: 1rem;
 }
 
 .modal {
@@ -21,10 +26,14 @@ $yellow: #f2e600;
   position: relative;
   color: #fff;
   padding: 20px;
+  height: 628px;
   width: 98%;
-  @media (max-width: 900px) {
-  width: min(980px, 100%);
-  padding: 40px;
+  @media (min-width: 768px) {
+    margin: 0 auto;
+    padding: 20px;
+    height: max-content;
+    width: min(980px, 100%);
+    padding: 40px;
   }
 }
 
@@ -49,9 +58,9 @@ $yellow: #f2e600;
   padding-bottom: 8px;
   font-size: 28px;
   line-height: normal;
-  @media (max-width: 900px) {
-  font-size: 48px;
-  line-height: 53px;
+  @media (min-width: 900px) {
+    font-size: 48px;
+    line-height: 53px;
   }
 }
 
@@ -59,10 +68,15 @@ $yellow: #f2e600;
   font-family: var(--font-gamepaused);
   font-style: normal;
   font-weight: 400;
-  font-size: 24px;
-  line-height: 26px;
   color: #ffffff;
-  padding-bottom: 24px;
+  font-size: 18px;
+  line-height: normal;
+  padding-bottom: 18px;
+  @media (min-width: 900px) {
+    font-size: 24px;
+    line-height: 26px;
+    padding-bottom: 24px;
+  }
 }
 
 .form {

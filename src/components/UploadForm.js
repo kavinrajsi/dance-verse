@@ -38,6 +38,20 @@ export default function UploadForm({ onClose }) {
     }
   }, [uploadSuccess, onClose]);
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+  // Lock scroll
+  document.body.classList.add("noscroll");
+  document.documentElement.classList.add("noscroll");
+
+  return () => {
+    // Unlock scroll when modal is closed/unmounted
+    document.body.classList.remove("noscroll");
+    document.documentElement.classList.remove("noscroll");
+  };
+}, []);
+
+
   // Formatters
   const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
@@ -449,7 +463,7 @@ export default function UploadForm({ onClose }) {
                   </div>
                   <div className={styles.progressStats}>
                     <span>{Math.round(uploadProgress)}% complete</span>
-                    {/* <span>Uploading directly to Vercel Blob...</span> */}
+                    {/* <span>Uploading to storage in progress...</span> */}
                   </div>
                 </div>
               )}
@@ -464,7 +478,7 @@ export default function UploadForm({ onClose }) {
                 </button>
                 {uploading && (
                   <p className={styles.uploadNote}>
-                    Direct upload to Vercel Blob in progress...
+                    Uploading to storage in progress...
                   </p>
                 )}
               </div>
@@ -475,7 +489,7 @@ export default function UploadForm({ onClose }) {
             <div className={styles.successIcon}>✅</div>
             <h2 className={styles.successTitle}>Successfully Uploaded!</h2>
             <p className={styles.successMessage}>
-              Your video has been uploaded directly to Vercel Blob. Thank you for being
+              Your video has been uploaded directly to storage. Thank you for being
               part of the DanceVerse!
             </p>
             <div className={styles.successFooter}>
