@@ -487,10 +487,11 @@ export default function UploadForm({ onClose }) {
         ) : (
           <div className={styles.successScreen}>
             <div className={styles.successIcon}>✅</div>
-            <h2 className={styles.successTitle}>Successfully Uploaded!</h2>
+            <h2 className={styles.successTitle}>Thank you for stepping into DanceVerse!</h2>
             <p className={styles.successMessage}>
-              Your video has been uploaded directly to storage. Thank you for being
-              part of the DanceVerse!
+              Our masters, Nagendra Prasad and Gayathri Raghuram, will be watching.
+              </p>
+              <p className={styles.successMessage}>Stay tuned <br /> you might be the one to be part of the first-ever digital dance show!
             </p>
             <div className={styles.successFooter}>
               <p>This window will close automatically...</p>
