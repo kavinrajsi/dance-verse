@@ -54,7 +54,6 @@
           font-weight: 400;
           font-size: 40px;
           line-height: 44px;
-          text-align: center;
           color: #f2eb1f;
         }
         .cardBody {
@@ -78,6 +77,7 @@
           line-height: 22px;
           /* identical to box height */
           color: #ffffff;
+          cursor: pointer;
         }
       }
     }

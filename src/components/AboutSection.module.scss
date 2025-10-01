@@ -15,12 +15,22 @@
       grid-template-columns: 1fr 1fr;
     }
   }
-  .image{
+  .about-moves__card {
+    position: relative;
     width: 100%;
-    height: auto;
-    @media (min-width: 768px) {
-      width: 400px;
-    }
+    aspect-ratio: 400 / 496;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #000;
+  }
+
+  .about-moves__media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .content {
     @media (min-width: 768px) {

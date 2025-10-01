@@ -51,18 +51,15 @@
     .btn {
       margin-top: 24px;
       padding: 12px 40px;
-      /* Primary/Light Purple */
       background: #7729aa;
       border-radius: 8px;
-
       font-family: var(--font-gamepaused);
       font-style: normal;
       font-weight: 400;
       font-size: 20px;
       line-height: 22px;
-      /* identical to box height */
-
       color: #ffffff;
+      cursor: pointer;
     }
     @media (min-width: 768px) {
       max-width: 610px;

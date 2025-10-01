@@ -15,10 +15,10 @@ export default function Home() {
       <PrizeSection />
       <WatchMoves
         items={[
-          { src: "/video-1.png", alt: "Courtyard group" },
-          { src: "/video-2.png", alt: "Studio crew" },
-          { src: "/video-3.png", alt: "Solo performance" },
-          { src: "/video-4.png", alt: "Outdoor routine" },
+          { src: "/video/video-1.webm", poster: "/video/video-1.png" },
+          { src: "/video/video-2.webm", poster: "/video/video-2.png" },
+          { src: "/video/video-3.webm", poster: "/video/video-3.png" },
+          { src: "/video/video-4.webm", poster: "/video/video-4.png" },
         ]}
       />
     </>
